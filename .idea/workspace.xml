@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="19092fe8-3c77-4062-a9e6-e8789bc535c6" name="Default Changelist" comment="" />
+    <list default="true" id="19092fe8-3c77-4062-a9e6-e8789bc535c6" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
+    <ignored path=".idea/" />
+    <ignored path="venv/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,6 +42,7 @@
           <entry key="cfg" value="3" />
           <entry key="csh" value="1" />
           <entry key="css" value="12" />
+          <entry key="getignore" value="1" />
           <entry key="html" value="20" />
           <entry key="iptest3" value="1" />
           <entry key="ipython" value="1" />
@@ -54,7 +60,7 @@
           <entry key="HTML" value="20" />
           <entry key="Ini" value="2" />
           <entry key="JavaScript" value="6" />
-          <entry key="PLAIN_TEXT" value="4" />
+          <entry key="PLAIN_TEXT" value="5" />
           <entry key="Python" value="27" />
           <entry key="SVG" value="5" />
         </counts>
@@ -63,6 +69,7 @@
         <counts>
           <entry key="Python Console" value="27" />
           <entry key="css" value="1312" />
+          <entry key="getignore" value="7" />
           <entry key="html" value="4831" />
           <entry key="js" value="182" />
           <entry key="py" value="1854" />
@@ -74,6 +81,7 @@
           <entry key="CSS" value="1312" />
           <entry key="HTML" value="4831" />
           <entry key="JavaScript" value="182" />
+          <entry key="PLAIN_TEXT" value="7" />
           <entry key="Python" value="1881" />
           <entry key="SVG" value="1" />
         </counts>
@@ -110,8 +118,8 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/templates/base.html">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="71">
-                  <caret line="75" column="40" lean-forward="true" selection-start-line="75" selection-start-column="40" selection-end-line="75" selection-end-column="40" />
+                <state relative-caret-position="331">
+                  <caret line="85" column="30" lean-forward="true" selection-start-line="85" selection-start-column="30" selection-end-line="85" selection-end-column="30" />
                 </state>
               </provider>
             </entry>
@@ -151,7 +159,7 @@
             <entry file="file://$PROJECT_DIR$/questions/models.py">
               <provider selected="true" editor-type-id="text-editor">
                 <state relative-caret-position="780">
-                  <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
+                  <caret line="30" selection-start-line="30" selection-end-line="30" />
                   <folding>
                     <element signature="e#0#36#0" expanded="true" />
                     <marker date="1540931918068" expanded="true" signature="167:172" ph="..." />
@@ -242,6 +250,9 @@
       <dir>$PROJECT_DIR$/public/css</dir>
     </dirStrings>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
@@ -272,6 +283,7 @@
         <option value="$PROJECT_DIR$/templates/list_questions.html" />
         <option value="$PROJECT_DIR$/public/css/main.css" />
         <option value="$PROJECT_DIR$/templates/base.html" />
+        <option value="$PROJECT_DIR$/.getignore" />
       </list>
     </option>
   </component>
@@ -287,6 +299,7 @@
     <option name="width" value="1297" />
     <option name="height" value="701" />
   </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
@@ -319,10 +332,10 @@
   <component name="PropertiesComponent">
     <property name="DefaultHtmlFileTemplate" value="HTML File" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/venv" />
     <property name="list.type.of.created.stylesheet" value="CSS" />
     <property name="nodejs_package_manager_path" value="npm" />
-    <property name="settings.editor.selected.configurable" value="settings.github" />
+    <property name="settings.editor.selected.configurable" value="project.propVCSSupport.Ignored.Files" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -399,7 +412,7 @@
   <component name="ToolWindowManager">
     <frame x="49" y="27" width="1317" height="741" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" weight="0.22651933" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.22651933" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -410,8 +423,8 @@
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.32838285" />
       <window_info anchor="bottom" id="Version Control" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49802995" weight="0.13861386" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50197005" side_tool="true" weight="0.6830065" />
+      <window_info anchor="bottom" id="Terminal" order="8" sideWeight="0.49723756" weight="0.44259566" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50276244" side_tool="true" weight="0.2762063" />
       <window_info anchor="bottom" id="Python Console" order="10" weight="0.6551155" />
       <window_info anchor="bottom" id="Docker" order="11" show_stripe_button="false" />
       <window_info anchor="bottom" id="Database Changes" order="12" show_stripe_button="false" />
@@ -553,7 +566,7 @@
     <entry file="file://$PROJECT_DIR$/questions/models.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="780">
-          <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
+          <caret line="30" selection-start-line="30" selection-end-line="30" />
           <folding>
             <element signature="e#0#36#0" expanded="true" />
             <marker date="1540931918068" expanded="true" signature="167:172" ph="..." />
@@ -644,10 +657,17 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/.getignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="5" selection-start-column="5" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/templates/base.html">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="71">
-          <caret line="75" column="40" lean-forward="true" selection-start-line="75" selection-start-column="40" selection-end-line="75" selection-end-column="40" />
+        <state relative-caret-position="331">
+          <caret line="85" column="30" lean-forward="true" selection-start-line="85" selection-start-column="30" selection-end-line="85" selection-end-column="30" />
         </state>
       </provider>
     </entry>
