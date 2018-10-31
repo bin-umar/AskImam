@@ -1,0 +1,245 @@
+/* Css-styles of icon*/
+@font-face {
+    font-family: Madelina;
+    src: url("../fonts/noturnal_hand.otf") format("opentype");
+}
+.css-1ivoip3 { justify-content: center; }
+.css-1k8tu3j { align-items: center; }
+.css-1cqgl9p { display: flex; }
+
+svg:not(:root) { overflow: hidden; }
+* { box-sizing: border-box; }
+
+.css-r2jepm {
+    height: 180px;
+    width: 100%;
+    max-width: 180px;
+    background-color: white;
+    position: relative;
+    border-radius: 90px;
+    overflow: hidden;
+}
+
+.css-gaq51w {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: background-color 0.3s ease 0s;
+    background: rgb(23, 90, 81);
+}
+
+.form-control[type='search']:focus, .btn:focus {
+    outline: 0 !important;
+    border-color: initial;
+    box-shadow: none;
+}
+
+.ask-btn {
+    margin-right: 10px;
+    font-family: Madelina;
+}
+
+.ask-btn a {
+    color: #fff;
+}
+
+.a-simple, .ask-btn a{
+    text-decoration: none;
+}
+
+.a-simple {
+    color: #000000;
+}
+
+#icon {
+    margin-top: -50px;
+}
+
+.header {
+    margin-top: 15px;
+}
+
+.header-icon {
+    margin-right: 10px;
+}
+
+.current-date {
+    font-size: 13px;
+    margin-right: -15px !important;
+}
+
+.menu-row {
+    display: block !important;
+}
+
+.date-row {
+    padding-top: 20px;
+}
+
+.search-div {
+    margin-right: -15px !important;
+}
+
+.site-footer {
+    background-color: #242729;
+    background-size: auto;
+    color: #6a737c;
+    padding-top: 0;
+    padding-bottom: 0;
+    min-height: 100px;
+}
+
+.site-footer__content *:not(:first-child) {
+  margin-left: 16px;
+}
+
+.site-footer__content {
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-pack: start;
+  -ms-flex-pack: start;
+  justify-content: flex-start;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  padding: 20px 0 0 0;
+  line-height: normal;
+  /*border-top: 1px solid #343a40;*/
+}
+
+.author {
+  text-align: center;
+  /*font-size: 16px;*/
+  /*color: #ff5a60 !important;*/
+  /*margin-bottom: 0;*/
+}
+
+.gb__main-wrapper {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+.footer-stick {
+    flex-grow: 1 !important;
+    margin: 20px auto;
+}
+
+.footer-stick,
+.sidebar {
+    padding-right: 0;
+}
+
+.no-padding-right {
+    padding-right: 0 !important;
+}
+
+.question-sorts {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.question-icons-block {
+    margin-left: 10px;
+    width: 100px;
+    min-height: 100px;
+    max-height: 120px;
+}
+
+.avatar-block {
+    height: 80%;
+}
+
+.question-votes {
+    font-size: 15px;
+    height: 20%;
+    width: 80%;
+    padding-bottom: 5px;
+    margin: 0 auto;
+}
+
+.question-votes div {
+    width: 13%;
+}
+
+.votes {
+    width: 60% !important;
+}
+
+.question-created-time {
+    font-size: 13px;
+    position: absolute;
+    top: -15px;
+    right: 5px;
+}
+
+.question-icon {
+    width: 80%;
+}
+
+.user-icon {
+    width: 25%;
+    margin-left: 30px;
+    margin-top: -25px;
+}
+
+.user-info {
+    font-size: 13px;
+    margin-left: 15px;
+}
+
+.card {
+    margin-bottom: 10px;
+}
+
+.login {
+    width: 450px;
+    margin: 40px auto 15px auto;
+}
+
+/* Ask.html styles */
+
+.ask-form, .ask-form-title {
+    width: 80%;
+    margin: 10px auto;
+}
+
+/* Profile.html styles */
+
+.profile-form, .profile-form-title {
+    width: 70%;
+    margin: 20px auto;
+}
+
+.profile-form {
+    padding: 20px 25px;
+}
+
+.avatar-upload {
+    width: 100px;
+    height: 100px;
+    border-radius: 50px;
+    margin-bottom: 10px;
+}
+
+.avatar-upload-icon {
+    width: 100%;
+}
+
+/* question.html styles */
+
+.question-text {
+    font-size: 15px;
+}
+
+.margin-top-30 {
+    margin-top: 10px;
+}
+
+.answers-block {
+    margin-top: 30px;
+}

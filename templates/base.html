@@ -1,0 +1,149 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+      <!-- Required meta tags -->
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+      <!-- Bootstrap CSS -->
+      <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+      <link rel="stylesheet" href="{% static 'css/main.css' %}">
+      <link rel="stylesheet" href="{% static 'css/icons.css' %}">
+      <link rel="icon" href="{% static 'img/favicon.png' %}">
+
+      <title>
+          {%block title %}
+            Ask Imam
+          {% endblock %}
+      </title>
+  </head>
+  <body>
+     <div class="gb__main-wrapper">
+         <header class="container header">
+             <div class="row">
+                 <div class="header-icon">
+                     <div class="css-1k8tu3j css-1ivoip3 css-r2jepm css-1cqgl9p">
+                        <div class="css-gaq51w"></div>
+                        <div style="transform: scale(0.43);">
+                            <a href="/">
+                                <img src="{% static 'img/askimam.svg'%}" id="icon" alt="AskImam"/>
+                            </a>
+                        </div>
+                    </div>
+                 </div>
+                 <div class="col">
+                    <div class="row border-bottom">
+                        <div class="col-9 row align-items-center">
+                            <div style="transform: scale(0.43);">
+                                <img src="{% static 'img/basmala.svg'%}" id="icon" alt="AskImam"/>
+                            </div>
+                        </div>
+                        <div class="col-3 no-padding-right">
+                            <div class="date-row d-inline-block">
+                                <div id="grigorian" class="current-date row"></div>
+                                <div id="hijri" class="current-date row"></div>
+                            </div>
+                            <a href="/profile">
+                                <img src="{% static '/img/default-avatar.png' %}" class="user-icon">
+                            </a>
+                            <div class="d-inline-block user-info">
+                                <div class="row">Mufti Menk</div>
+                                <div class="row">
+                                    <a href="#">Logout</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row border-bottom menu-row">
+                       <nav class="navbar navbar-expand-lg navbar-light">
+                           <button class="navbar-toggler" type="button" data-toggle="collapse"
+                              data-target="#navbarTogglerDemo03" aria-controls="navbarTogglerDemo03"
+                              aria-expanded="false" aria-label="Toggle navigation">
+                               <span class="navbar-toggler-icon"></span>
+                           </button>
+                           <a class="navbar-brand" href="#">Navbar</a>
+                           <div class="collapse navbar-collapse" id="navbarTogglerDemo03">
+                               <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+                                   <li class="nav-item active">
+                                       <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                                   </li>
+                                   <li class="nav-item">
+                                       <a class="nav-link" href="/login">Login</a>
+                                   </li>
+                                   <li class="nav-item">
+                                       <a class="nav-link" href="/signup">Sign up</a>
+                                   </li>
+                               </ul>
+                               <button class="btn btn-secondary ask-btn">
+                                   <a href="/ask">
+                                       Ask Question
+                                   </a>
+                               </button>
+                               <form class="form-inline my-2 my-lg-0">
+                                   <div class="input-group search-div">
+                                       <input class="form-control py-2 border-right-0 border" type="search" placeholder="search">
+                                       <span class="input-group-append">
+                                           <button class="btn btn-outline-secondary border-left-0 border">
+                                               <i class="material-icons">search</i>
+                                           </button>
+                                       </span>
+                                   </div>
+                               </form>
+                           </div>
+                       </nav>
+                    </div>
+                     <div class="row">
+                            {# Site map #}
+                     </div>
+                 </div>
+             </div>
+         </header>
+         <div class="container footer-stick row">
+            <div class="col-9">
+                {%block content %} {% endblock %}
+            </div>
+            <div class="col-3 sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        Popular tags
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                          <li class="list-group-item">Marriage & Divorce</li>
+                          <li class="list-group-item">Quran & Hadith</li>
+                          <li class="list-group-item">Food & drink</li>
+                          <li class="list-group-item">Prayer</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        Best Members
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                          <li class="list-group-item">Mufti Ebrahim Desai</li>
+                          <li class="list-group-item">Mahmood Patel</li>
+                          <li class="list-group-item">Mufti Menk</li>
+                          <li class="list-group-item">Numan ALi Khan</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+         </div>
+         <footer class="site-footer d-print-none">
+             <div class="site-footer__content">
+                 <p class="author">Copyright JT © (2018) - «AskImam» Application </p>
+             </div>
+         </footer>
+     </div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="{% static 'js/jquery-3.3.1.slim.min.js' %}"></script>
+    <script src="{% static 'js/popper.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'js/hijri.min.js' %}"></script>
+    <script src="{% static 'js/myscripts.js' %}"></script>
+  </body>
+</html>

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+    <h3 class="profile-form-title">Edit your profile</h3>
+    <div class="card profile-form">
+        <div class="card-body">
+            <form>
+                <div class="d-table w-100">
+                    <div class="d-table-row">
+                        <div class="d-table-cell">
+                            <label for="login">Login</label>
+                        </div>
+                        <div class="d-table-cell">
+                            <div class="form-group">
+                                <input type="text" id="login" class="form-control" name="login" placeholder="Imam JT">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-table-row">
+                        <div class="d-table-cell">
+                            <label for="email">Email</label>
+                        </div>
+                        <div class="d-table-cell">
+                            <div class="form-group">
+                                <input type="email" id="email" class="form-control" name="email" placeholder="example@mail.ru">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-table-row">
+                        <div class="d-table-cell">
+                            <label for="nickName">Nickname</label>
+                        </div>
+                        <div class="d-table-cell">
+                            <div class="form-group">
+                                <input type="text" id="nickName" class="form-control" name="nickName" placeholder="Nickname">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-table-row">
+                        <div class="d-table-cell">
+                            <label for="avatar">Avatar</label>
+                        </div>
+                        <div class="d-table-cell">
+                            <div class="avatar-upload">
+                                <img src="{% static '/img/default-avatar.png' %}" class="avatar-upload-icon">
+                            </div>
+                            <div class="form-group">
+                                <input type="file" id="avatar" class="form-control-file" name="avatar">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-secondary ask-btn w-25">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

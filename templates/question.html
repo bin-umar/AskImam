@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{%  block content %}
+  <div class="row">
+      {% include 'avatar_block.html' %}
+      <div class="col">
+{#          <span class="question-created-time">#}
+{#              <i>{{ question.created_at }}</i>#}
+{#          </span>#}
+          <div class="border-bottom">
+            <h4 class="card-title">{{ question.title }}</h4>
+          </div>
+          <p class="card-text text-justify question-text margin-top-30">
+              {{ question.text | safe }}
+          </p>
+          <div class="row">
+              <p class="card-text">
+                  Tags:
+{#                      {% for tag in question.tags %}#}
+{#                          <button class="btn btn-light">#}
+{#                              <a href="#">{{ question.tags.get }}</a>#}
+{#                          </button>#}
+{#                      {% endfor %}#}
+              </p>
+          </div>
+      </div>
+  </div>
+    <div class="answers-block">
+        <div class="border-bottom border-top text-center">
+            <h4>Answers:</h4>
+        </div>
+        <div class="row">
+            {% include 'avatar_block.html' %}
+            <div class="col">
+                <div class="card-body">
+                    <p class="card-text text-justify question-text">
+                        In the Name of Allah, the Most Gracious, the Most Merciful.
+                        <br>As-salāmu ‘alaykum wa-rahmatullāhi wa-barakātuh.
+                        <br>Brother in Islam,
+                        <br>You have sent us four questions at once. We have to attend to many queries on a daily basis.
+                        <br>You may select one out of the four and send one query at a time.
+                        <br>You may revert to us at admin@daruliftaa.net ref. Abdullah Sajid.
+                        <br>Furthermore, we also advise that you refer to your local scholars in India.
+                        <br>And Allah Ta’āla Knows Best
+                        <br>Abdullah Syed Sajid
+                        <br>Student Darul Iftaa
+                        <br>Houston, TX, USA
+                        <br>Checked and Approved by,
+                        <br><br>Mufti Ebrahim Desai.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
