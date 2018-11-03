@@ -203,11 +203,6 @@ svg:not(:root) { overflow: hidden; }
 
 /* Ask.html styles */
 
-.ask-form, .ask-form-title {
-    width: 80%;
-    margin: 10px auto;
-}
-
 /* Profile.html styles */
 
 .profile-form, .profile-form-title {
@@ -237,9 +232,28 @@ svg:not(:root) { overflow: hidden; }
 }
 
 .margin-top-30 {
+    margin-top: 30px;
+}
+
+.margin-top-20 {
+    margin-top: 20px;
+}
+
+.margin-top-10 {
     margin-top: 10px;
+}
+
+.padding-top-20 {
+    padding-top: 1.25rem;
 }
 
 .answers-block {
     margin-top: 30px;
+}
+
+.answer-created-time {
+    font-size: 13px;
+    position: absolute;
+    bottom: 15px;
+    right: 20px;
 }

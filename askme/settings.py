@@ -37,8 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'questions'
+    'questions',
+    'tinymce'
 ]
+
+# AUTH_USER_MODEL = 'questions.MyUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

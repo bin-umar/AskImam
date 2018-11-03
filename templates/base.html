@@ -11,7 +11,7 @@
       <link rel="stylesheet" href="{% static 'css/main.css' %}">
       <link rel="stylesheet" href="{% static 'css/icons.css' %}">
       <link rel="icon" href="{% static 'img/favicon.png' %}">
-
+      <script src="{% static 'js/tinymce/tinymce.min.js' %}"></script>
       <title>
           {%block title %}
             Ask Imam
@@ -94,13 +94,18 @@
                        </nav>
                     </div>
                      <div class="row">
-                            {# Site map #}
+{#                         site-map#}
+{#                        <nav aria-label="breadcrumb">#}
+{#                          <ol class="breadcrumb">#}
+{#                            <li class="breadcrumb-item active" aria-current="page">Home</li>#}
+{#                          </ol>#}
+{#                        </nav>#}
                      </div>
                  </div>
              </div>
          </header>
          <div class="container footer-stick row">
-            <div class="col-9">
+            <div class="col-9 margin-top-20">
                 {%block content %} {% endblock %}
             </div>
             <div class="col-3 sidebar">

@@ -16,19 +16,18 @@ Including another URL-conf
 
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from questions import views
 
 urlpatterns = [
-    path('', views.listQuestions),
-    path('admin/', admin.site.urls),
-    path('login/', views.login),
-    path('signup/', views.signUp),
-    path('ask/', views.ask),
-    path('question/', views.question),
-    path('profile/', views.profile),
-    path('new/', views.new_questions, name='new question')
-    # path('question/<ini.pk>/', views.question, name='question')
+    path('', views.list_questions, name="index"),
+    path('admin/', admin.site.urls, name="admin"),
+    path('login/', views.login, name="login"),
+    path('signup/', views.sign_up, name="signUp"),
+    path('ask/', views.ask, name="ask"),
+    path('profile/', views.profile, name="profile"),
+    path('question/<int:pk>/', views.question, name='question'),
+    path('tinymce/', include('tinymce.urls')),
 ]
 
 
