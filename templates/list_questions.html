@@ -1,20 +1,32 @@
 {% extends "base.html"%}
 {% load static %}
 
+{% block title %}
+    List Questions -
+{% endblock %}
+
 {%block content%}
     <h3>Top Questions</h3>
     <div class="btn-group justify-content-end question-sorts" role="group" aria-label="Question types">
-        <button class="btn btn-light">
-          <a href="#">Hot</a>
+        <button class="btn btn-light" data-toggle="tooltip" data-placement="bottom"
+                title="The newest questions">
+          <a href="/news">New</a>
         </button>
-        <button class="btn btn-light">
-          <a href="#">Without answer</a>
+        <button class="btn btn-light" data-toggle="tooltip" data-placement="bottom"
+                title="Questions with the most votes and answers over the last few days">
+          <a href="/hot">Hot</a>
         </button>
-        <button class="btn btn-light">
-          <a href="#">Week</a>
+        <button class="btn btn-light" data-toggle="tooltip" data-placement="bottom"
+                title="Questions without answers">
+          <a href="/no_answer">Without answer</a>
         </button>
-        <button class="btn btn-light">
-          <a href="#">Month</a>
+        <button class="btn btn-light" data-toggle="tooltip" data-placement="bottom"
+                title="Questions with the most votes and answers over this week">
+          <a href="/week">Week</a>
+        </button>
+        <button class="btn btn-light" data-toggle="tooltip" data-placement="bottom"
+                title="Questions with the most votes and answers over this month">
+          <a href="/month">Month</a>
         </button>
     </div>
     {% for question in questions %}
@@ -54,5 +66,7 @@
           </div>
         </div>
     {% endfor %}
-    {% include 'pager.html' %}
+    {% if questions.paginator.num_pages > 1 %}
+        {% include 'pager.html' with objects=questions %}
+    {% endif %}
 {%endblock%}

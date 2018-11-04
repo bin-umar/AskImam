@@ -21,6 +21,7 @@ from questions import views
 
 urlpatterns = [
     path('', views.list_questions, name="index"),
+    path('<slug:filter>', views.list_questions, name="index"),
     path('admin/', admin.site.urls, name="admin"),
     path('login/', views.login, name="login"),
     path('signup/', views.sign_up, name="signUp"),
@@ -29,7 +30,3 @@ urlpatterns = [
     path('question/<int:pk>/', views.question, name='question'),
     path('tinymce/', include('tinymce.urls')),
 ]
-
-
-
-
