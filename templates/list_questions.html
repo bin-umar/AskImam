@@ -33,7 +33,7 @@
         <div class="card">
           <div class="card-body">
               <div class="row">
-                  {% include 'avatar_block.html' with votes=question.votes %}
+                  {% include 'inc/avatar_block.html' with rate=question.rate %}
                   <div class="col">
                       <span class="question-created-time">
                           <i>{{ question.created_at }}</i>
@@ -42,18 +42,11 @@
                           <a class="a-simple" href="{% url 'question' question.pk %}">{{ question.title }}</a>
                       </h5>
                       <h6 class="card-subtitle mb-2 text-muted">
-                          {{ question.text | truncatewords_html:27 }}
+                          {{ question.text | truncatewords_html:27 | safe | escape }}
                       </h6>
                       <div class="row">
                           <div class="col-9">
-                              <p class="card-text">
-                                  Tags:
-                                  {% for tag in question.tags.all %}
-                                      <button class="btn btn-light">
-                                          <a href="#">{{ tag.text }}</a>
-                                      </button>
-                                  {% endfor %}
-                              </p>
+                              {% include 'inc/tags_block.html' %}
                           </div>
                           <div class="col-3">
                               <button class="btn btn-light">
@@ -67,6 +60,6 @@
         </div>
     {% endfor %}
     {% if questions.paginator.num_pages > 1 %}
-        {% include 'pager.html' with objects=questions %}
+        {% include 'inc/pager.html' with objects=questions %}
     {% endif %}
 {%endblock%}

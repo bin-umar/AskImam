@@ -1,32 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, reverse
 from questions.models import Question, Answer
-from datetime import timedelta, date
 from django.core.paginator import Paginator
+from questions.forms import LoginForm
+from django.contrib import auth
 
 
-def list_questions(request, filter=None):
-    questions = Question.objects.all()
-    if filter is not None:
-        today = date.today()
-        if filter == 'news':
-            questions = questions.order_by('-created_at')
-        elif filter == 'hot':
-            questions = questions.order_by('-votes', '-answer_count')
-        elif filter == 'no_answer':
-            questions = questions.filter(answer_count=0)
-        elif filter == 'week':
-            start_week = today - timedelta(days=today.weekday())
-            end_week = start_week + timedelta(days=6)
-            questions = questions.filter(created_at__gte=start_week, created_at__lt=end_week)\
-                .order_by('-votes', '-answer_count')
-        elif filter == 'month':
-            questions = questions.filter(created_at__month=today.month).order_by('-votes', '-answer_count')
-        else:
-            questions = questions.filter(tags__text__iexact=filter).order_by('-created_at')
-    else:
-        questions = questions.order_by('-created_at')
-
-    paginator = Paginator(questions, 2)
+def pager(request, iterable):
+    paginator = Paginator(iterable, 10)
 
     page = 1
     if 'page' in request.GET:
@@ -34,7 +14,27 @@ def list_questions(request, filter=None):
         if _page:
             page = _page
 
-    questions = paginator.get_page(page)
+    return paginator.get_page(page)
+
+
+def list_questions(request, filter=None):
+    if filter is not None:
+        if filter == 'news':
+            questions = Question.objects.news()
+        elif filter == 'hot':
+            questions = Question.objects.hot()
+        elif filter == 'no_answer':
+            questions = Question.objects.no_answer()
+        elif filter == 'week':
+            questions = Question.objects.week()
+        elif filter == 'month':
+            questions = Question.objects.month()
+        else:
+            questions = Question.objects.by_tag(filter)
+    else:
+        questions = Question.objects.news()
+
+    questions = pager(request, questions)
 
     return render(request, "list_questions.html", {
         'questions': questions
@@ -43,6 +43,15 @@ def list_questions(request, filter=None):
 
 def login(request):
     return render(request, "logsup.html")
+
+
+def logout(request):
+    if request.POST:
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            cdata = form.cleaned_data
+            user = auth.authenticate()
+    return redirect(reverse('index'))
 
 
 def sign_up(request):

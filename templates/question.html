@@ -3,7 +3,7 @@
 
 {%  block content %}
   <div class="row">
-      {% include 'avatar_block.html' with votes=question.votes %}
+      {% include 'inc/avatar_block.html' with rate=question.rate %}
       <div class="col">
           <span class="question-created-time">
               <i>{{ question.created_at }}</i>
@@ -15,14 +15,7 @@
               {{ question.text | safe | escape }}
           </p>
           <div class="row">
-              <p class="card-text">
-                  Tags:
-                  {% for tag in question.tags.all %}
-                      <button class="btn btn-light">
-                          <a href="#">{{ tag.text }}</a>
-                      </button>
-                  {% endfor %}
-              </p>
+              {% include 'inc/tags_block.html' %}
           </div>
       </div>
   </div>
@@ -33,7 +26,7 @@
         {% for answer in answers %}
             <div class="row margin-top-10">
                 <div class="padding-top-20">
-                    {% include 'avatar_block.html' with votes=answer.votes %}
+                    {% include 'inc/avatar_block.html' with rate=answer.rate %}
                 </div>
                 <div class="col">
                     <div class="card-body">
