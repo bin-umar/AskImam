@@ -1,0 +1,144 @@
+<script>
+var lastURL = 'about:blank';
+
+if (localStorage.getItem('lastUpdate') === null) {
+	localStorage.setItem('lastUpdate', Math.round(Date.now() / 1000));
+} else {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', 'https://api.metacert.com/2.0/s7hrzu4d/label/get_updates/'+localStorage.getItem('lastUpdate'), true);
+	
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState === 4) {
+			var apiResponse = JSON.parse(xhr.responseText);
+			if (apiResponse.response.label) {
+				var labels = apiResponse.response.label.certificate;
+				
+				if (labels[0]['includehosts']) {
+					for (var i = 0; i < labels[0]['includehosts'].length; i++) {
+						if (localStorage.getItem(labels[0]['includehosts'][i]) === 'not-xxx') {
+							localStorage.setItem(labels[0]['includehosts'][i], 'xxx');
+						}
+					}
+				}
+				
+				if (labels[1]['includehosts']) {
+					for (var i = 0; i < labels[1]['includehosts'].length; i++) {
+						if (localStorage.getItem(labels[1]['includehosts'][i]) === 'xxx') {
+							localStorage.setItem(labels[1]['includehosts'][i], 'not-xxx');
+						}
+					} 
+				}
+			}
+			localStorage.setItem('lastUpdate', Math.round(Date.now() / 1000));
+		}
+	}
+	
+	xhr.send();
+}
+
+chrome.tabs.onUpdated.addListener(blockURL);
+chrome.tabs.onCreated.addListener(blockAfterCreate);
+
+chrome.tabs.onActiveChanged.addListener(function(id, info) {
+	chrome.tabs.get(id, function(tab) {
+		blockURL(id, tab);
+	});
+});
+
+chrome.extension.onConnect.addListener(function(port) {
+  port.onMessage.addListener(function(msg) {
+    if (msg.requestType === 'storeInCache') {
+      localStorage.setItem(msg.domain, msg.labelType);
+    } else if (msg.requestType === 'getFromCache') {
+      port.postMessage({
+      	responseType: 'cacheResponse', 
+      	domain: msg.domain,
+      	labelType: localStorage.getItem(msg.domain),
+      	responseNumber: msg.requestNumber
+      });
+    } else if (msg.requestType === 'getFromCachePreview') {
+    	port.postMessage({
+	      	responseType: 'cacheResponseForPreview', 
+	      	domain: msg.domain,
+	      	labelType: localStorage.getItem(msg.domain)
+      });
+    }
+  });
+});
+
+function blockAfterCreate(id, change) {
+	lastURL = 'about:blank';
+	blockURL(id, change);
+}
+
+function blockURL(id, change) {
+
+	if (change.url === undefined || change.url === 'about:blank' || change.url === 'chrome://newtab/') {
+		return;
+	}
+	
+	var domain = change.url.split('/')[2];
+
+	if (domain.indexOf('www.google.') === 0) {
+		if (change.url.indexOf('/url?') < 0 && change.url.indexOf('&adurl') < 0) {
+			lastURL = change.url;
+		}
+		return;
+	} 
+
+	if (domain === 'webcache.googleusercontent.com') {
+		domain = change.url.split(':')[3].split('/')[0];
+	}
+	
+	if (domain.indexOf('www.') === 0) {
+		domain = domain.substr(4);
+	}
+	
+	var labelType = localStorage.getItem(domain);
+	
+	if (labelType === 'xxx') {
+		notifyAndBlock(id, domain, lastURL);	
+	} else if (labelType === 'not-xxx') {
+		lastURL = change.url;
+	} else {
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', 'https://api.metacert.com/2.0/s7hrzu4d/label/get_info/'+domain, true);
+		
+		xhr.onreadystatechange = function() {
+			if (xhr.readyState === 4) {
+				var apiResponse = JSON.parse(xhr.responseText);
+				
+				if (apiResponse.response.labels) {
+					if (apiResponse.response.labels.certificate[0]['-type'] === 'xxx') {
+						notifyAndBlock(id, domain, lastURL);
+						localStorage.setItem(domain, 'xxx');
+					} else {
+						lastURL = change.url;
+						localStorage.setItem(domain, 'not-xxx');
+					} 
+				} else {
+					lastURL = change.url;
+				}
+			}
+		}
+		
+		xhr.send();
+	}
+}
+
+function notifyAndBlock(id, domain, changeURL) {
+	chrome.tabs.update(id, {url: changeURL});
+
+	var notification = webkitNotifications.createNotification(
+		chrome.extension.getURL("images/ae_icon_large.png"),
+		'Adult Entertainment',
+		'MetaCert believes that ' + domain + ' may contain adult content. As a precaution access has been blocked.'
+	);
+	
+	notification.show();
+	
+	setTimeout(function() {
+		notification.cancel();
+	}, 7000);
+}
+</script>

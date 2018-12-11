@@ -9,7 +9,8 @@
     <h3 class="ask-form-title">Ask new Question</h3>
     <div class="card ask-form">
         <div class="card-body">
-            <form>
+            <form method="post">
+                {% csrf_token %}
                 <div class="form-group">
                     <label for="title">Question title:</label>
                     <input class="form-control" type="text" id="title" name="title" placeholder="How to do ..?">

@@ -1,0 +1,213 @@
+<!doctype html>
+<html>
+<head>
+    <title>MetaCert Preferences</title>
+
+    <link rel="stylesheet" type="text/css" href="css/reset.css" />
+    <link rel="stylesheet" type="text/css" href="css/iphone-checkboxes.css" />
+    <link rel="stylesheet" href="lib/ui-lightness/jquery-ui.css" />
+    <link rel="stylesheet" type="text/css" href="css/options.css" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+
+<div id="loading-overlay">
+    <img class="center-icon" src="images/icon_48.png" />
+    <span class="title">Loading<span id="dots">....</span></span>
+
+    <p class="description">
+        Just a few more moments,<br />
+        Go on and have some chocolate while you wait.
+    </p>
+</div>
+<div id="wrapper">
+    <div id="left-panel">
+        <header class="branding">
+            <img src="images/icon_gray_48.png" class="logo" />
+            <span>Options</span>
+            <span class="brandName">MetaCert</span>
+            <span class="prodName">Parental Controls & Web Filter</span>
+            <span class="account">
+					Admin
+					<ul class="drop-down">
+						<li><a href="https://family-safety.metacert.com" target="_blank">About</a></li>
+						<li><a href="https://metacert.uservoice.com" target="_blank">Support &amp; Feedback</a></li>
+						<li><a href="#" rel="change_pw">Change Password</a></li>
+						<li><a href="#" rel="logout">Logout</a></li>
+					</ul>
+				</span>
+        </header>
+
+        <nav>
+            <ul>
+                <li rel="just-for-kids"><a href="#" />
+                    <h2>Just For Kids</h2>
+                    <h4>A walled garden of kid-safe websites, hand-picked by <span class="brand">MetaCert</span> for guaranteed safety</h4>
+                    <span class="mode-status">Disabled</span>
+                    </a>
+                </li>
+
+                <li rel="safe-browsing" class="selected">
+                    <a href="#">
+                        <h2>Safe Browsing</h2>
+                        <h4>Provides access to the open web:<br /><br />Strong - Suitable for kids<br />Extra Strong - Suitable for adults</h4>
+                        <span class="mode-status">Enabled</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <div id="master-slider-container">
+        <label for="master-slider" rel="enable">Enable</label>
+        <input type="checkbox" id="master-slider" value="off" />
+        <label for="master-slider" rel="disable">Disable</label>
+    </div>
+
+    <div class="right-panel selected" id="safe-browsing">
+        <div class="right-align">
+
+            <div id="settings">
+                <h1>Pornography</h1>
+
+                <div id="safeguard-slider">
+                    <span class="first">Extra Strong</span>
+                    <span class="middle">Strong</span>
+                    <span class="last">Off</span>
+                </div>
+
+                <div id="categories">
+                    <ul><!-- list of categories is auto-generated --></ul>
+                </div>
+                <button id="settings-confirm" class="button">Ok, I&apos;m done</button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="right-panel" id="just-for-kids">
+        <div class="right-align">
+            <button id="add-domain" class="left button">Add A Site</button>
+
+            <div id="kid-safe-domains">
+                <h1>White-Listed Sites</h1>
+                <ul>
+                    <!-- list of domain is auto-generated -->
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="right-panel blended" id="continue-screen">
+        <div class="center-align">
+            <img src="images/parent_child_icon.png" class="center-symbol" />
+
+            <div class="copy-float">
+                <!-- <p id="continue-text" rel="just-for-kids">Just For Kids browsing will restrict all browsing to a limited number of sites which are safe for kids, plus any additional sites you wish to add.<br /><br/>If you enable Just For Kids, your Safe Browsing settings will be disabled.<br /><br/> Do you want to enable Just For Kids browsing?</p> -->
+                <!-- <p id="continue-text" rel="safe-browsing">Safe Browsing allows you to prevent access to certains types of websites.<br /><br/>If you enable Safe Browsing, your Just For Kids settings will be disabled.<br /><br/> Do you want to enable Safe Browsing?</p> -->
+                <p id="continue-text"></p>
+                <button id="continue-cancel">No, thanks</button>
+                <button id="continue-go">Enable</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel blended" id="user-screen" rel="register">
+        <div class="info-right">
+            <span>Not Yet Registered?<a class="user-mode-action" rel="register" href="#">Register Now</a></span>
+        </div>
+
+        <div class="center-align" rel="register">
+            <h2>Sign Up</h2>
+            <form>
+                <input type="email" name="email" placeholder="Email Address" />
+                <input type="password" name="password" placeholder="Password" />
+
+                <input type="submit" value="Sign Up" class="button" />
+            </form>
+        </div>
+
+        <div class="center-align" rel="login">
+            <h2>Log In</h2>
+            <a href="#" class="reset_pw">Reset Your Password</a>
+            <form>
+                <input type="email" name="email" placeholder="Email Address" />
+                <input type="password" name="password" placeholder="Password" />
+
+                <input type="submit" value="Log In" class="button" />
+            </form>
+        </div>
+
+        <div class="center-align" rel="login_existing">
+            <h2>Welcome back!</h2>
+            <a href="#" class="reset_pw">Reset Your Password</a>
+            <p>Enter your password below to get started</p>
+
+            <form>
+                <input type="hidden" name="email" />
+                <input type="password" name="password" placeholder="Password" tabindex="1" />
+
+                <input type="submit" value="Continue" class="button" />
+            </form>
+        </div>
+
+        <div class="center-align" rel="reset_pw">
+            <h2>I forgot my password</h2>
+
+            <p>No problem! Just confirm your email address below and we'll reset it.</p>
+
+            <form>
+                <input type="email" name="email" placeholder="Email Address" />
+
+                <input type="submit" value="Reset It Please" class="button" />
+            </form>
+        </div>
+
+        <div class="center-align" rel="change_pw_reset">
+            <h2>Choose a new password</h2>
+
+            <p>We've just emailed you a reset code. Enter it below to change your password.</p>
+
+            <form>
+                <input type="hidden" name="email" />
+                <input type="text" name="reset_code" placeholder="Reset Code" />
+                <input type="password" name="password" placeholder="New Password" />
+
+                <input type="submit" value="Change Password" class="button" />
+            </form>
+        </div>
+
+        <div class="center-align" rel="change_pw">
+            <h2>Change your password</h2>
+            <form>
+                <input type="hidden" name="id" />
+                <input type="password" name="oldPassword" placeholder="Old Password" />
+                <input type="password" name="newPassword" placeholder="New Password" />
+
+                <input type="submit" value="Change it" class="button" />
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<div id="flash-message">
+    <span class="message"><!-- Your changes are now saved. --></span>
+
+    <!-- <button id="flash-message-dimiss">x</button> -->
+</div>
+
+<script src="lib/jquery.js"></script>
+<script src="lib/iphone-checkboxes.js"></script>
+<script src="lib/jquery.color.js"></script>
+<script src="lib/jquery-ui.js"></script>
+<script type="application/javascript" src="lib/moment.js"></script>
+<script src="js/options.js"></script>
+</body>
+
+
+</html>

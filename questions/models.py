@@ -64,7 +64,7 @@ class Answer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE, default=0)
     record_date = models.DateTimeField(auto_now_add=True)
-    is_true = models.BooleanField()
+    is_true = models.BooleanField(default=False)
     votes = GenericRelation(Vote, related_query_name='answers', default=0)
     rate = models.IntegerField(default=0)
 

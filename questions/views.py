@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, reverse
-from questions.models import Question, Answer
+from questions.models import *
 from django.core.paginator import Paginator
-from questions.forms import LoginForm
-from django.contrib import auth
+from questions.forms import *
+from django.http import JsonResponse
+from django.contrib.auth import authenticate, logout as d_logout, login as d_login
+from django.contrib.auth.decorators import login_required
 
 
 def pager(request, iterable):
@@ -41,27 +43,61 @@ def list_questions(request, filter=None):
     })
 
 
+def status_response(status, message):
+    return JsonResponse({'status': status, 'message': message})
+
+
 def login(request):
-    return render(request, "logsup.html")
-
-
-def logout(request):
     if request.POST:
         form = LoginForm(request.POST)
         if form.is_valid():
             cdata = form.cleaned_data
-            user = auth.authenticate()
+            try:
+                user = User.objects.get(email__iexact=cdata['email'])
+            except User.DoesNotExist:
+                return status_response(False, {'email': 'User by this email not found!!'})
+            else:
+                user = authenticate(username=user.username, password=cdata['password'])
+                if user is not None:
+                    d_login(request, user)
+                    next = request.POST.get('next', '/')
+                    return status_response(True, next)
+                else:
+                    return status_response(False, {'login': 'Login or password is wrong!!'})
+        else:
+            return status_response(False, form.errors)
+    
+    return render(request, "logsup.html")
+
+
+@login_required
+def logout(request):
+    d_logout(request)
     return redirect(reverse('index'))
 
 
 def sign_up(request):
+    if request.POST:
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            raw_password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_password)
+            d_login(request, user)
+            return status_response(True, "/")
+        else:
+            return status_response(False, form.errors)
+
     return render(request, "logsup.html")
 
 
+@login_required(login_url='/login/')
 def ask(request):
     return render(request, "ask.html")
 
 
+@login_required(login_url='/login/')
 def profile(request):
     return render(request, "profile.html")
 

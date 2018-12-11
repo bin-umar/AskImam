@@ -4,7 +4,6 @@ from questions import views
 
 urlpatterns = [
     path('',              views.list_questions, name="index"),
-    path('<slug:filter>', views.list_questions, name="filteredIndex"),
     path('admin/',        admin.site.urls,      name="admin"),
     path('login/',        views.login,          name="login"),
     path('logout/',       views.logout,         name="logout"),
@@ -12,5 +11,6 @@ urlpatterns = [
     path('ask/',          views.ask,            name="ask"),
     path('profile/',      views.profile,        name="profile"),
     path('question/<int:pk>/', views.question,  name='question'),
+    path('questions/<slug:filter>', views.list_questions, name="filteredIndex"),
     path('tinymce/', include('tinymce.urls')),
 ]

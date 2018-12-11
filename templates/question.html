@@ -48,14 +48,17 @@
         {% endfor %}
     </div>
     <div class="new-answer">
-        <div class="margin-top-30">
+        <form method="post">
+            {% csrf_token %}
+            <div class="margin-top-30">
             <h4> Your answer</h4>
-        </div>
-        <div>
-            <textarea title="answer" id="tinymce"></textarea>
-        </div>
-        <div class="d-flex justify-content-end margin-top-20">
-            <button type="submit" class="btn btn-secondary ask-btn w-25">Submit answer</button>
-        </div>
+            </div>
+            <div>
+                <textarea title="answer" id="tinymce"></textarea>
+            </div>
+            <div class="d-flex justify-content-end margin-top-20">
+                <button type="submit" class="btn btn-secondary ask-btn w-25">Submit answer</button>
+            </div>
+        </form>
     </div>
 {% endblock %}

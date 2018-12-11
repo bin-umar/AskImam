@@ -2,7 +2,7 @@
   Tags:
   {% for tag in question.tags.all %}
       <button class="btn btn-light">
-          <a href="/{{ tag.text }}">{{ tag.text }}</a>
+          <a href="/questions/{{ tag.text }}">{{ tag.text }}</a>
       </button>
   {% endfor %}
 </p>

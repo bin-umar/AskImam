@@ -1,10 +1,32 @@
 from django import forms
-from questions.models import Question
+from questions.models import *
+from django.contrib.auth.forms import UserCreationForm
 
 
 class LoginForm(forms.Form):
-    username = forms.CharField(required=True)
-    password = forms.CharField(required=True, widget=forms.PasswordInput())
+    email = forms.EmailField(required=True)
+    password = forms.CharField(required=True)
+
+    class Meta:
+        model = User
+        fields = ['email', 'password']
+
+
+class SignupForm(UserCreationForm):
+    email = forms.EmailField(required=True, max_length=254)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password1', 'password2']
+
+    def clean_email(self):
+        qs = User.objects.filter(email=self.cleaned_data['email'])
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.count():
+            raise forms.ValidationError('User with this email address is already exist')
+        else:
+            return self.cleaned_data['email']
 
 
 class QuestionsForm(forms.ModelForm):

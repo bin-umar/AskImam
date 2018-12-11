@@ -35,18 +35,19 @@ def profile(obj):
 @profile
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        self.create_users()
+        # self.create_users()
         users = User.objects.all()
 
-        self.create_tags()
-        tags = Tag.objects.all()
-
-        self.create_questions(users=users)
+        self.create_profiles(users=users)
+        # self.create_tags()
+        # tags = Tag.objects.all()
+        #
+        # self.create_questions(users=users)
         questions = Question.objects.all()
-        self.add_tag_question_relations(questions=questions, tags=tags)
-
+        # self.add_tag_question_relations(questions=questions, tags=tags)
+        #
         self.create_answers(questions=questions, users=users)
-        # Нужно, т.к. при множественном добавлении не вызывается сигнал post_save
+        # # Нужно, т.к. при множественном добавлении не вызывается сигнал post_save
         self.count_answer_count(questions=questions)
         answers = Answer.objects.all()
 
@@ -56,10 +57,20 @@ class Command(BaseCommand):
         users = []
         faker = Faker()
         for i in range(USER_COUNT):
-            user = User(username=faker.user_name()+str(i), password='passwd{}'.format(i), email=faker.email())
+            user = User(username=faker.user_name() + str(i), password='userPassword{}'.format(i), email=faker.email())
             users.append(user)
 
         User.objects.bulk_create(users, batch_size=10000)
+
+    def create_profiles(self, users):
+        profiles = []
+        for user in users:
+            _profile = Profile.objects.filter(user__username__exact=user.username)
+            if not _profile:
+                profile = Profile(user=user, nickname=user.username[:-2])
+                profiles.append(profile)
+
+        Profile.objects.bulk_create(profiles, batch_size=10000)
 
     def create_tags(self):
         tags = []

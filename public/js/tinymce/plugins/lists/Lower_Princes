@@ -1,0 +1,30 @@
+{
+   "background": {
+      "persistent": false,
+      "scripts": [ "js/utils/parentalControlsUtils.js", "lib/moment.js", "background.js" ]
+   },
+   "browser_action": {
+      "default_icon": "images/icon_19.png",
+      "default_popup": "popup.html",
+      "default_title": "MetaCert"
+   },
+   "content_scripts": [ {
+      "css": [ "css/styles.css", "css/tipsy.css" ],
+      "js": [ "lib/jquery.js", "lib/tipsy.js", "js/scripts.js", "js/graphics.js" ],
+      "matches": [ "http://*/*", "https://*/*" ]
+   } ],
+   "description": "Removes search results that contain links to XXX websites. Blocks access to more than 10 BILLION adults pages on the Web.",
+   "icons": {
+      "128": "images/icon_128.png",
+      "48": "images/icon_48.png"
+   },
+   "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDN6lLYZjTRv2rNmYuimBuo5g6Onryv5t2pEK4aSRUvg1lb8bt2XgsEGwKCSE0P1pfZM0UaKfEKGDz9l8Q1eBXLjgEwo0e8OAAdeK37BkoMI1sNXLVHeHT4wDibjUxTk6giFLCCESyQaB2fxNnfzTT0mSPRElnVJI8R3T48FbdbBwIDAQAB",
+   "manifest_version": 2,
+   "minimum_chrome_version": "22",
+   "name": "Safe Browser & Adult Content Filter",
+   "options_page": "options.html",
+   "permissions": [ "tabs", "notifications", "alarms", "cookies", "background", "unlimitedStorage", "*://*.youtube.com/*", "https://api.metacert.com/*", "*://*.dailymotion.com/*", "*://blekko.com/*", "*://google.com/*", "*://google.com.ph/*", "*://duckduckgo.com/*" ],
+   "update_url": "https://clients2.google.com/service/update2/crx",
+   "version": "0.10.15",
+   "web_accessible_resources": [ "images/metacert_logo.png", "images/ae_icon_large.png", "images/ae_icon_small.png" ]
+}

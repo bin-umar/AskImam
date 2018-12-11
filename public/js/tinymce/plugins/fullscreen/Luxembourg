@@ -1,0 +1,9 @@
+2018/11/05-19:25:01.829 21913 Reusing MANIFEST /home/jahongir/.config/google-chrome/Default/IndexedDB/https_www.renault.ru_0.indexeddb.leveldb/MANIFEST-000001
+2018/11/05-19:25:18.774 23923 Current memtable full; waiting...
+2018/11/05-19:25:18.774 3843 Level-0 table #5: started
+2018/11/05-19:25:18.818 3843 Level-0 table #5: 403 bytes OK
+2018/11/05-19:25:18.852 3843 Delete type=0 #3
+2018/11/05-19:25:18.852 3843 Level-0 table #7: started
+2018/11/05-19:25:18.852 3843 Level-0 table #7: 0 bytes OK
+2018/11/05-19:25:18.885 3843 Delete type=0 #4
+2018/11/05-19:25:18.886 3843 Manual compaction at level-0 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)

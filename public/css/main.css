@@ -38,11 +38,11 @@ svg:not(:root) { overflow: hidden; }
 
 .ask-btn {
     margin-right: 10px;
-    font-family: Madelina;
 }
 
-.ask-btn a {
+.ask-btn a, .signup-btn a {
     color: #fff;
+    font-family: Madelina;
 }
 
 .a-simple, .ask-btn a{
@@ -183,13 +183,16 @@ svg:not(:root) { overflow: hidden; }
 
 .user-icon {
     width: 20%;
-    margin-left: 30px;
     margin-top: -25px;
 }
 
 .user-info {
     font-size: 13px;
     margin-left: 20px;
+}
+
+.mleft-30 {
+    margin-left: 30px;
 }
 
 .card {
@@ -256,4 +259,27 @@ svg:not(:root) { overflow: hidden; }
     position: absolute;
     bottom: 15px;
     right: 20px;
+}
+
+.errorLogin, .errorSignup {
+    color: #ba2121;
+    position: absolute;
+    left: 25px;
+    width: 290px;
+}
+
+.login-btn {
+    margin: -15px -5px 0 20px;
+}
+
+.login-btn a {
+    color: #195a50;
+}
+
+a {
+    text-decoration: none !important;
+}
+
+.signup-btn {
+    margin: -15px 0 0 0;
 }

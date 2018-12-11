@@ -43,15 +43,26 @@
                                 <div id="grigorian" class="current-date"></div>
                                 <div id="hijri" class="current-date"></div>
                             </div>
-                            <a href="/profile">
-                                <img src="{% static '/img/default-avatar.png' %}" class="user-icon">
-                            </a>
-                            <div class="d-inline-block user-info">
-                                <div class="row">Mufti Menk</div>
-                                <div class="row">
-                                    <a href="#">Logout</a>
+                            {% if user.is_authenticated %}
+                                <a href="/profile/">
+                                    <img src="{% static '/img/default-avatar.png' %}" class="mleft-30 user-icon">
+                                </a>
+                                <div class="d-inline-block user-info">
+                                    <div class="row">{{ user.username }}</div>
+                                    <div class="row">
+                                        <a href="/logout/">Logout</a>
+                                    </div>
                                 </div>
-                            </div>
+                            {% else %}
+                                <div class="d-inline-block">
+                                    <button class="btn btn-light login-btn">
+                                       <a href="/login">Log In</a>
+                                    </button>
+                                    <button class="btn btn-secondary signup-btn">
+                                       <a href="/signup">Sign Up</a>
+                                    </button>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="row border-bottom menu-row">
@@ -144,7 +155,7 @@
      </div>
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="{% static 'js/jquery-3.3.1.slim.min.js' %}"></script>
+    <script src="{% static 'js/jquery-3.3.1.min.js' %}"></script>
     <script src="{% static 'js/popper.min.js' %}"></script>
     <script src="{% static 'js/bootstrap.min.js' %}"></script>
     <script src="{% static 'js/hijri.min.js' %}"></script>

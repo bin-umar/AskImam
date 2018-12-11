@@ -1,0 +1,2268 @@
+(function() {
+var lastURL = 'about:blank',
+    currentURL = '',
+    keywords = [
+      "xnxx",
+      "uporn",
+      "pornhub",
+      "redtube",
+      "xvideos",
+      "xhamster",
+      "tube8",
+      "cfnm",
+      "fisting",
+      "pussies",
+      "livejasmin",
+      "brazzer",
+      ".adultspycam.net",
+      ".sexylivepics.com",
+      ".freeplaygirls.com",
+      ".jasmineprivateshows.net",
+      ".heoncams.com",
+      ".jasminspycam.com",
+      ".a-liveprivates.com",
+      ".livesnatches.com",
+      ".vibratorfairy.com",
+      ".fineasscams.com",
+      ".naughtyscreenshots.com",
+      ".mycams.me",
+      ".pornlivenews.com",
+      ".sweet18pussy.com",
+      ".pornotribune.com",
+      ".adultcamfiles.com"
+    ],
+    HTTP_WWW_RE = /^((ht|s?f)tps?:\/\/)?(www[0-9]?\.)?/i,
+    resolver = {},
+    transforms = {},
+    hotfixes = [];
+
+var regularSearch = /google|yahoo|bing|ask|blekko|duckduckgo|vimeo/i,
+    regularExtractor =  generateParamExtractor('q'),
+    ytExtractor = generateParamExtractor('search_query'),
+    dailyExtractor = /search\/([a-zA-Z0-9-_+!%*]+)\/?/,
+    araboExtractor = generateParamExtractor('keywords'),
+    translateExtractor = generateParamExtractor('u');
+
+String.prototype.contains = function(sub) {
+  return this.indexOf(sub) > -1;
+}
+
+String.prototype.hasPrefix = function(sub) {
+  return this.indexOf(sub) == 0;
+}
+
+String.prototype.hasSuffix = function(sub) {
+  return this.indexOf(sub) == this.length - sub.length;
+}
+
+var hasMigrated = localStorage.getItem('metacert-user-hasMigrated');
+
+if (hasMigrated != "true") { // don't let blocking fail because a parent hasn't seen our options/users update
+  localStorage.setItem('metacert-user', JSON.stringify({dummy : true}));
+  localStorage.setItem('pref-xxx', 'strong');
+  localStorage.setItem('pref-file-sharing', 'true');
+  localStorage.setItem('pref-web-proxies', 'true');
+  localStorage.setItem('pref-torrent', 'true');
+  localStorage.setItem('pref-malware', 'true');
+  localStorage.setItem('pref-spyware', 'true');
+  localStorage.setItem('pref-ignore-flags', 'false');
+  localStorage.setItem('metacert-user-hasMigrated', true);
+}
+
+ParentalControlsUtils.setTrialDates();
+updatePartialsList();
+
+if (localStorage.getItem('lastUpdate') === null) {
+  localStorage.setItem('lastUpdate', Math.round(Date.now() / 1000));
+
+} else {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'https://api.metacert.com/2.0/s7hrzu4d/label/get_updates/' + localStorage.getItem('lastUpdate'), true);
+
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState === 4) {
+
+      try {
+        var apiResponse = JSON.parse(xhr.responseText);
+      } catch (e) {
+        console.log('Failed getting updates', e, apiResponse, xhr.responseText);
+        return;
+      }
+
+      if (apiResponse.response.label) {
+        var labels = apiResponse.response.label.certificate;
+
+        for (var i=0; i < labels.length; i++) {
+          var hosts = labels[i]['includehosts'],
+              type = labels[i]['-type'];
+
+          if (hosts) {
+            for (var j = 0; j < hosts.length; j++) {
+              if (!hosts[j]) {
+                continue;
+              }
+
+              localStorage.setItem(hosts[j], type);
+            }
+          }
+        }
+      }
+
+      localStorage.setItem('lastUpdate', Math.round(Date.now() / 1000));
+    }
+  }
+
+  xhr.send();
+}
+
+chrome.alarms.create('updatePartials', {
+  delayInMinutes : 300, // 5 hours
+  periodInMinutes : 300
+});
+
+chrome.alarms.onAlarm.addListener(updatePartialsList);
+chrome.tabs.onUpdated.addListener(blockURL);
+chrome.tabs.onCreated.addListener(handleNewTab);
+
+chrome.tabs.onActivated.addListener(function (info) {
+  chrome.tabs.get(info.tabId, function(tab) {
+    blockURL(info.tabId, tab);
+  });
+});
+
+chrome.extension.onConnect.addListener(function (port) {
+  port.onMessage.addListener(function (msg) {
+    if (msg.requestType === 'resolveURI') {
+
+      resolver.resolveURI(msg.uri, msg.domain, function(answers) {
+
+        port.postMessage({
+          responseType : 'resolveURIResponse',
+          responseNumber : msg.requestNumber,
+          answers : answers
+        });
+
+      });
+
+    }
+
+  });
+});
+
+function blockURL(id, change) {
+  if (change === undefined || change.url === undefined) {
+    return;
+  }
+
+  if (change.url.substr(0, 6) == 'chrome') {
+    return;
+    
+  }
+
+  currentURL = change.url;
+  var URL = change.url.toLowerCase(),
+            domain = URL.split('/')[2];
+
+  if (domain === undefined || domain == "metacert.com" || domain.substr(-13) == ".metacert.com" ||
+      domain === 'metacert-block.com') {
+    return;
+  
+  }
+
+  if (domain.contains('google')) {
+    if (domain.hasPrefix('www.google.') && !URL.contains('/url?') && !URL.contains('&adurl')) {
+      lastURL = change.url;
+
+    } else if (domain.hasPrefix('translate.google.')) {
+      var trURL = extract(URL, translateExtractor);
+
+      if (trURL) {
+        URL = decodeURIComponent(trURL);
+        
+      }
+
+    } else if (domain == 'webcache.googleusercontent.com') {
+      domain = URL.split(':')[3].split('/')[0];
+    }
+
+  }
+
+  if (domain.indexOf('www.') === 0) {
+    domain = domain.substr(4);
+  }
+
+  if (resolver.isSet('kid-safe')) {
+    var engine = detectSearch(domain, URL);
+
+    if (engine && engine.contains('search')) {
+      var term = extractSearchQuery(engine, URL),
+          loadStopper = {'code': 'window.stop()'};
+
+      chrome.tabs.executeScript(id, loadStopper, function() {});
+
+      doJFKSearch(id, term, engine);
+
+      return;
+    } else if(engine === undefined){
+        console.log("engine", engine, domain);
+        loadStopper = {'code': 'window.stop()'};
+        chrome.tabs.executeScript(id, loadStopper, function() {});
+        chrome.tabs.update(id, {
+            url: 'http://duckduckgo.com'
+        });
+    }
+  
+  } else {
+    var safeguard = resolver.getSetting('xxx');
+
+    if (safeguard != 'off' && !resolver.isSet('ignore-flags')) {
+      forceSafeSearch(id, domain, URL, safeguard == 'extra-strong'); //! TODO: enable for Chrome Web Store / disable for internal
+    }
+
+  }
+
+  resolver.resolveURI(URL, domain, true, function(answers) {
+
+    for (var uri in answers) {
+      if (answers[uri].block === true) {
+        notifyAndBlock(id, URL, lastURL);
+        return;
+      }
+    }
+
+    lastURL = URL;
+
+  });
+}
+
+function handleNewTab(tab) {
+  if (resolver.isSet('kid-safe') && (tab.url.hasPrefix('chrome://newtab') || stripHead(tab.url).hasPrefix('google.com/webhp?sourceid=chrome-instant'))) {
+    doJFKSearch(tab.id);
+    
+  }
+}
+
+resolver = {
+  apiBuffer : [], chunkSize : 16,
+
+  shouldBlock : function(type, domain) {
+    if (this.isSet('kid-safe')) { // everything but kid-safe or local-whitelist is blocked
+      if (type == 'kid-safe') {
+        return false;
+      
+      } else if (!domain) {
+        return true;
+      }
+
+      console.log('Not-kid safe type', domain, type);
+      return isUserKidSafe(domain) === false;
+    }
+
+    if (this.isSet('ignore-flags')) {
+      return false; // don't block anything
+    }
+
+    if (!type || type == 'null-cached') {
+      return false;
+    }
+
+    if (type == 'xxx') {
+      var pref = this.getSetting('xxx');
+
+      return pref != 'off';
+    }
+
+    return this.isSet(type); // only block if category is enabled in settings
+  },
+
+  getSetting : function(pref) {
+    return localStorage.getItem('pref-' + pref);
+  },
+
+  getAllSettings : function() {
+    var settings = {};
+
+    for (var k in localStorage) { 
+      if (k.substr(0,5) == "pref-") {
+        settings[k] = localStorage[k];
+      }
+    }
+
+    return settings;
+  },
+
+  isSet : function(pref) {
+    return this.getSetting(pref) == "true";
+  },
+
+  fromAPI : function(type) {
+    return type !== null && type.constructor == String && type.substr(0,4) != 'null';
+  },
+
+  parseResponse : function(info) {
+    if (!info || !('type' in info)) {
+      return {
+        block : false,
+        api   : false
+      };
+    }
+
+    var type = info.type, ret = {};
+
+    if ('domain' in info && info['domain'].length > 0) {
+      ret['block'] = this.shouldBlock(type, info['domain']);
+    } else {
+      ret['block'] = this.shouldBlock(type);
+    }
+
+    ret['api'] = this.fromAPI(type);
+
+    return ret;
+  },
+
+  resolveURI : function(uri, domain, callback) { // uri, domain[, ignoreTimer], callback
+    var answer = null,
+        ignoreTimer = false,
+        keywordMatch = false,
+        user = localStorage.getItem('metacert-user');
+
+    if (user && user == "null") {
+      user = null;
+    }
+
+    if (typeof callback == 'boolean') {
+      ignoreTimer = callback;
+      callback = [].slice.call(arguments)[3];
+    }
+
+    if (!callback) {
+      throw new Error("Need a callback here!");
+    }
+
+    if (!user || !uri || !domain) {
+      answer = {};
+
+      answer[uri] = {
+        block : this.shouldBlock(null),
+        api : false
+      };
+
+      callback(answer);
+      return;
+    }
+
+    uri = uri.toLowerCase();
+    domain = domain.toLowerCase();
+
+    var origURI = uri;
+
+    uri = transforms.sanitize(uri, domain);
+
+    if (domain.length == stripHead(uri).length - 1 && uri.substr(-1,1) == '/') {
+      uri = uri.substr(0, uri.length - 1);
+
+      if (isPartial(domain)) {
+        answer = 'not-xxx';
+      }
+    }
+
+    var xxxSetting = this.getSetting('xxx');
+
+    if (xxxSetting === 'extra-strong') {
+      keywordMatch = this.keywordsMatch(origURI);
+    
+    } else {
+      keywordMatch = this.keywordsMatch(domain);
+    
+    }
+
+    if (keywordMatch) {
+      answer = 'xxx';
+
+    } else if (!answer) {
+      answer = this.cache.check(stripHead(uri));
+
+    }
+
+    if (!answer && isPartial(domain)) {
+      answer = this.checkFolders(domain, uri);
+
+      if (answer) {
+        var finalAnswer = {};
+        finalAnswer[origURI] = answer;
+
+        callback(finalAnswer);
+        return;
+      }
+    }
+
+    if (!answer) {
+      answer = this.cache.check(domain);
+    }
+
+    if (answer && answer != 'partial') {
+      var finalAnswer = {};
+
+      finalAnswer[ origURI ] = {
+        block : this.shouldBlock(answer, domain),
+        api   : this.fromAPI(answer)
+      };
+
+      callback(finalAnswer);
+
+      return;
+    }
+
+    if ((/^(ht|s?f)tps?:\/\//i).test(origURI) == false) {
+      origURI = 'http://' + origURI;
+    }
+
+    this.apiBuffer.push(origURI);
+
+    if (ignoreTimer || this.apiBuffer.length >= this.chunkSize) {
+      this.timer.invalidate();
+
+      this.checkAPI(this.apiBuffer, callback);
+      this.apiBuffer = [];
+    
+    } else {
+      var self = this;
+      this.timer.start(self, callback);
+    }
+  },
+
+  keywordsMatch : function(uri) {
+    for (var i = 0; i < keywords.length; i++) {
+      if (uri.indexOf(keywords[i]) > -1) {
+        return true;
+      }
+    }
+
+    return false;
+  },
+
+  timer : {
+    valid : false,
+    id : null,
+    duration : 25, // max time before firing API call
+    callback : null,
+
+    invalidate : function() {
+      this.valid = false;
+
+      if (this.id) {
+        clearTimeout(this.id);
+        this.id = null;
+      }
+    },
+
+    start : function(ref, callback) {
+      if (this.valid) {
+        return;
+      }
+
+      var self = this;
+
+      this.valid = true;
+      this.callback = callback;
+
+      this.id = setTimeout(function() {
+        self.fire.call(self, ref);
+      }, this.duration);
+    },
+
+    fire : function(ref) {
+
+      if (this.valid && ref.apiBuffer.length > 0) {
+        ref.checkAPI(ref.apiBuffer, this.callback);
+      }
+
+      ref.apiBuffer = [];
+      this.callback = null;
+      this.id = null;
+    }
+  },
+
+  checkFolders : function(domain, uri) {
+    var folders = parseFolders(localStorage.getItem(domain + ':folders')),
+        testURI = uri.replace(HTTP_WWW_RE, '').replace(new RegExp('^' + domain), '');
+
+    for (var i = folders.length; i--; ) {
+      if (testURI.substr(0, folders[i].length) == folders[i]) {
+        
+        return this.parseResponse({ // mimic API response
+          url     : uri,
+          domain  : domain,
+          type    : 'xxx',
+          scope   : 'folder',
+        });
+      }
+    }
+
+    return null;
+  },
+
+  checkAPI : function(uri_list, callback) {
+    if (!uri_list.length) {
+      return;
+    }
+
+    var self = this;
+
+    performFnInChunks(function(uris) {
+      var xhr = new XMLHttpRequest(), body = "";
+
+      for (var i=uris.length; i--; ) {
+        body += uris[i] + '|';
+      }
+
+      body = body.substr(0, body.lastIndexOf('|'));
+      body = 'urls=' + btoa(body);
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+
+          try {
+            var response = JSON.parse(xhr.responseText);
+
+            self.timer.valid = false;
+
+            if (!(response || response.length))
+              return;
+
+          } catch (e) {
+            return;
+          }
+
+          var answers = {}
+
+          for (var i=response.length; i--; ) {
+            answers[ response[i]['url'] ] = self.parseResponse(response[i]);
+          }
+
+          callback(answers);
+
+          self.cache.saveBatch(response);
+
+        }
+      }
+
+      xhr.open('POST', 'https://api.metacert.com/2.0/s7hrzu4d/label/get_urls', true);
+      xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+      xhr.send(body);
+
+    }, uri_list, this.chunkSize, this);
+
+  },
+
+  cache : {
+    expireTime : -1,
+
+    save : function(data) {
+      if (!data || !('type' in data) || !('url' in data) ) {
+        return;
+      }
+
+      var uri = stripHead(data['url']),
+          expires = secondsFromNow(this.expireTime);
+
+      if (!uri || uri.charAt(0) == '.' || uri.charAt(0) == '/') {
+        return;
+      }
+
+      if (data['domain']) {
+        uri = transforms.sanitize(uri, data["domain"]);
+      }
+
+      if (data['type'] === null) {
+        if (this.expireTime == -1) {// disabled
+          return;
+        }
+
+        localStorage.setItem(uri, "null," + expires);
+        return;
+      }
+
+      if (!('scope' in data) || !data['scope'] || !('url' in data) || !data['url']) {
+        return; // shouldn't happen, but you never know
+      }
+
+      switch(data['scope']) {
+        case 'url': {         
+          localStorage.setItem(uri, data['type']);
+          break;
+        }
+
+        case 'domain': {
+          if (isPartial(data['domain']))
+            return;
+
+          localStorage.setItem(data['domain'], data['type']);
+          break;
+        }
+
+        case 'folder': {
+          var existing = parseFolders(localStorage.getItem(data['domain'] + ':folders'));
+
+          if (existing.indexOf(data['folder']) == -1) {
+            existing.push(data['folder']);
+
+            existing = stringifyFolders(existing);
+
+            localStorage.setItem(data['domain'] + ':folders', existing);
+          }
+
+          break;
+        }
+
+        case 'subdomain': {
+          if (!('baseDomain' in data && data['baseDomain'])) {
+            return;
+          }
+
+          if (isPartial(data['baseDomain'])) {
+            return;
+          }
+
+          localStorage.setItem(data['baseDomain'], data['type']);
+
+          break;
+        }
+
+        default: {
+          console.error('Unknown scope: ' + data['scope'], data);
+          break;
+        }
+      }
+    },
+
+    check : function(uri) {
+      var data = localStorage.getItem(uri);
+
+      if (data && data.substr(0,5) == 'null,') { // null-response with ttl
+        var expires = data.split(',')[1];
+
+        if (!isNaN(expires)) {
+          if (expires > secondsFromNow(0)) {
+            data = null;
+            this.remove(uri);
+          
+          } else {
+            return 'null-cached';
+          }
+        }
+      }
+
+      if (resolver.isSet('kid-safe') && isUserKidSafe(uri)) {
+        return 'kid-safe';
+      }
+
+      if (hotfixes.indexOf(uri) > -1) {
+        return 'xxx';
+      }
+
+      return data;
+    },
+
+    remove : function(uri) {
+      delete localStorage[uri];
+    },
+
+    saveBatch : function(dataList) {
+      for (var i=dataList.length; i--; ) {
+        this.save(dataList[i]);
+      }
+    },
+
+    search : function(term) {
+      var ret = {};
+      
+      for (var key in localStorage) {
+        if (key.contains(term)) {
+          ret[key] = localStorage[key];
+        }
+      }
+
+      return ret;
+    }
+  
+  }
+}
+
+transforms = {
+
+  sanitize : function(uri, domain) {
+    var mods = this.stripIrrelevant(uri, domain);
+
+    if (domain == mods[1]) {
+      return mods[0];
+    }
+
+    return mods[0].replace(domain, mods[1]);
+  },
+
+  map : {
+    'facebook.com' : {
+      '/video/video.php' : ['v'],
+      '/photo.php' : ['fbid', 'v'],
+      '/search/results.php' : ['q'],
+      '/media/set' : ['set'],
+      '/media_set' : ['set']
+    }/*,
+
+    'twitter.com' : {
+      '/search' : ['q']
+    }*/
+  },
+
+  stripIrrelevant : function(uri, domain) {
+    var effectiveDomain = this.normalizeDomain(domain);
+
+    if (!(effectiveDomain in this.map)) {
+      return [uri, effectiveDomain]; // perhaps return null to signify no change
+    }
+
+    var map = this.map[effectiveDomain],
+        relativePath = uri.replace(HTTP_WWW_RE, '').replace(new RegExp('^' + domain), '');
+
+    for (var path in map) {
+      if (relativePath.hasPrefix(path)) {
+        return [this.strip(uri, map[path]), effectiveDomain];
+        
+      }
+    }
+
+    return [uri, effectiveDomain];
+  },
+
+  strip : function(uri, paramsToKeep) {
+    var queryStr = uri.split('?'),
+        domainAndPath,
+        altQuery = {},
+        params;
+
+    if (queryStr.length == 1) {
+      return uri;
+    }
+
+    domainAndPath = queryStr[0];
+    queryStr = queryStr[1];
+    params = this.parse(queryStr);
+
+    for (var i = paramsToKeep.length; i--; ) {
+      var param = paramsToKeep[i];
+
+      if (param in params) {
+        altQuery[param] = params[param];
+      }
+    }
+
+    altQuery = this.serialize(altQuery);
+
+    return domainAndPath + (altQuery ? ('?' + altQuery) : '');
+  },
+
+  serialize : function(params) {
+    var str = '',
+        paramOrder = [];
+
+    for (var key in params) {
+      paramOrder.push(key);
+    }
+
+    paramOrder.sort(); // ensure alphabetical parameter order
+
+    for (var i = 0; i < paramOrder.length; i++) {
+      str += this.param(paramOrder[i], params[paramOrder[i]]) + '&';
+    }
+
+    if (str.length > 0) {
+      str = str.substr(0, str.length - 1);
+    }
+
+    return str;
+  },
+
+  param : function(key, value) {
+    return encodeURIComponent(key) + '=' + encodeURIComponent(value);
+  },
+
+  normalizeDomain : function(domain) {
+    if (domain.contains('.facebook.com') && (domain == 'm.facebook.com' || domain == "touch.facebook.com" ||
+              domain == "0.facebook.com") || domain.contains('-')) { // '-' for localized subdomains like en-gb.facebook.com
+      return 'facebook.com';
+    
+    }/* else if (domain == 'mobile.twitter.com') {
+      return 'twitter.com';
+    
+    } */else {
+      return domain;
+    }
+  },
+
+  parse : function(uri) {
+    if (!uri) {
+      return {};
+    }
+    var params = {},
+        kVPairs = [];
+
+    uri = uri.replace(/^\?/, '');
+    kVPairs = uri.split('&');
+
+    for (var i = kVPairs.length; i--; ){
+      var pair = kVPairs[i].split('=');
+
+      pair[0] = decodeURIComponent(pair[0]);
+
+      if (pair.length == 1) {
+        if (pair[0] == "") {
+          continue;
+        }
+
+        params[pair[0]] = "";
+      }
+
+      params[pair[0]] = decodeURIComponent(pair[1]);
+    }
+
+    return params;
+  }
+}
+
+function isPartial(domain) {
+  var partials = localStorage.getItem('partials') || "",
+      searchRE = new RegExp("(^|\\|)" + domain, 'i');
+
+  return searchRE.test(partials);
+}
+
+function isUserKidSafe(domain) {
+  var kidSafeDomains = localStorage.getItem('kid-safe-list') || "",
+    searchRE = new RegExp('(^|\\|)' + domain, 'i');
+
+  return searchRE.test(kidSafeDomains); 
+}
+
+function stripHead(uri) {
+  return (uri) ? uri.replace(HTTP_WWW_RE, '') : "";
+}
+
+function secondsFromNow(secs) {
+  return Math.floor(Date.now() / 1000 + secs);
+}
+
+function parseFolders(folders) {
+  if (!folders)
+    return [];
+
+  return folders.split("|");
+}
+
+function stringifyFolders(folders) {
+  if (!folders || !folders.length)
+    return "";
+
+  return folders.join('|');
+}
+
+function notifyAndBlock(id, uri, changeURL) {
+  var parts = parse_url(uri),
+      domain;
+
+  if ('host' in parts) {
+    domain = parts.host.replace(HTTP_WWW_RE, '');
+  }
+
+    let paidAccount = localStorage.getItem("metacert-stripe-status");
+    let blockIt = true;
+    /* Calculate User Trial Status */
+    let trialExpired = false;
+    let trialEndUnix = localStorage.getItem("metacert-user-trial-end-date");
+    let toDay = moment(new Date());
+    let trialEnds = moment.unix(trialEndUnix);
+    let diffDays = trialEnds.diff(toDay, "days");
+    if(diffDays < 0) {
+        trialExpired = true;
+    }
+
+    //Disable Trial Expired
+    /*if(trialExpired === true && paidAccount!== "trialing" && paidAccount!== "active"){
+        blockIt = false;
+    } */
+
+
+  //console.log("block", domain);
+  if(blockIt!== false && domain !== "twitter.com" && domain !== "facebook.com" && domain !== "duckduckgo.com"  && domain !== "linkedin.com" ){
+      if(resolver.isSet('kid-safe')) {
+          changeURL = "https://duckduckgo.com";
+      }else {
+          changeURL = "https://google.com";
+      }
+      if (domain) {
+          chrome.tabs.update(id, {
+              url: 'http://metacert-block.com?domain=' + domain + '&redirect=' + escape(changeURL)
+          });
+
+      } else {
+          chrome.tabs.update(id, {
+              url: 'http://metacert-block.com?redirect=' + escape(changeURL)
+          });
+      }
+  }
+
+}
+
+function doJFKSearch(id, term, engine) {
+  var url = 'https://duckduckgo.com/?t=h_&ia=web&q=' + (term ? term : "");
+
+  chrome.tabs.update(id, {
+    url : 'about:blank'
+  });
+
+  chrome.tabs.update(id, {
+    url : url 
+  });
+
+  return url;
+}
+
+function updatePartialsList(alarm) {
+  if (alarm && alarm.name != 'updatePartials')
+    return;
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'https://api.metacert.com/2.0/s7hrzu4d/individual/get_domain_list', true);
+
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      try {
+        var partials = JSON.parse(xhr.responseText);
+
+        if (!partials.length) // malformed or 0; we don't care which
+          return;
+      
+      } catch (e) {
+        return;
+      }
+
+      var existing = localStorage.getItem('partials'), i;
+
+      if (existing) {
+        existing = existing.split('|');
+        
+        if (existing.length == 1)
+          existing = existing[0].split(',');
+
+      } else
+        existing = [];
+
+      for (i = existing.length; i--; ) {
+        if (partials.indexOf(existing[i]) == -1) {
+          localStorage.setItem(existing[i], 'xxx');
+        }
+      }
+
+      for (i = partials.length; i--; ) {
+        localStorage.setItem(partials[i], 'partial');
+      }
+
+      localStorage.setItem('partials', partials.join('|'));
+    }
+  }
+
+  xhr.send();
+}
+
+function detectSearch(domain, url) {
+  if (!url) {
+    return null;
+  }
+
+  url = url.replace(HTTP_WWW_RE, ''),
+      queryStr = url.split('?');
+
+  if (queryStr.length > 1) {
+    queryStr = queryStr[1];
+
+  } else {
+    queryStr = "";
+  }
+
+  var path = url.substr(domain.length) || "";
+
+  if (domain.hasPrefix('google.') || domain.hasPrefix('encrypted.google.')) {
+    if (url.contains('tbm=isch')) {
+      return 'google image search';
+
+    } else if (url.contains('tbm=vid')) {
+      return 'google video search';
+
+    } else if (url.contains('tbo=d') || path.hasPrefix('/search') || ((path == '/' || path.hasPrefix('/webhp')) && queryStr.contains('q='))) {
+      return 'google search';
+    }
+
+  } else if (domain.hasPrefix('bing.')) {
+    if (path.hasPrefix('/search')) {
+      return 'bing search';
+
+    } else if (path.hasPrefix('/images/search')) {
+      return 'bing image search';
+
+    } else if ( path.hasPrefix('/videos/search')) {
+      return 'bing video search';
+
+    }
+
+  } else if (url.contains('search.yahoo.')) {
+    if (url.hasPrefix('images.search.yahoo.')) {
+      return 'yahoo images search';
+
+    } else if ( url.hasPrefix('video.search.yahoo.')) {
+      return 'yahoo video search';
+
+    } else if (path.length > 1) {
+      return 'yahoo search';
+    }
+  
+  } else if (domain.hasPrefix('blekko.') ) {
+    if (url.contains('images')) {
+      return 'blekko image search';
+
+    } else if (url.contains('videos')) {
+      return 'blekko video search';
+
+    } else {
+      return 'blekko search';
+    }
+
+  } else if (domain === 'ask.com') {
+    return 'ask search';
+
+  } else if (domain === 'youtube.com') {
+    if (path.hasPrefix('/results') && queryStr.contains('search_query=')) {
+      return 'youtube search';
+    }
+
+    return 'youtube';
+
+  } else if (domain === 'dailymotion.com') {
+    if (path.contains('/relevance/search/')) {
+      return 'dailymotion search';
+    }
+    return 'dailymotion';
+
+  } else if (domain === 'vimeo.com') {
+    if (path.hasPrefix('/search') && queryStr.contains('q=')) {
+      return 'vimeo search';
+    }
+
+    return 'vimeo';
+
+  } else if (domain === 'duckduckgo.com' && queryStr.contains('q=')) {
+    return 'duckduckgo search';
+  
+  } else if (domain === 'arabo.com' && path.hasPrefix('/cgi-bin/links/search') && queryStr.contains('keywords=')) {
+    return 'arabo search';
+
+  } 
+}
+
+function extractSearchQuery(engine, url) {
+  var query;
+
+  if (regularSearch.test(engine)) {
+    return extract(url, regularExtractor);
+  
+  } else if (engine == 'youtube search') {
+    return extract(url, ytExtractor);
+  
+  } else if (engine == 'dailymotion search') {
+    return extract(url, dailyExtractor);
+
+  } else if (engine == 'arabo search') { 
+    return extract(url, araboExtractor);
+  }
+}
+
+function extract(str, extractor) {
+  var query;
+
+  return (query = extractor.exec(str)) ? query[1].replace('+', '+') : "";
+}
+
+function forceSafeSearch(id, domain, url, extraStrong) {
+  var engine = detectSearch(domain, url), // chrome.tabs.update(id, {url: fullUrl + (queryStr ? '&' : '?') + 'adlt=strict'});
+      sep = url.contains('?') ? '&' : '?',
+      original = url,
+      hash = url.indexOf('#');
+
+  if (!engine) {
+    return;
+  }
+
+  if (hash > 0) {
+    url = url.substring(0, hash); // remove hash
+  }
+
+  if (engine.hasPrefix('google')) {
+    if (!extraStrong && engine == 'google search') {
+      if (url.contains('safe=strict')) {
+        chrome.tabs.update(id, {
+          'url' : url.replace(/&?safe=strict/gi, '')
+        });
+      }
+
+      return;
+    }
+
+    if (!url.contains('safe=strict')) {
+      chrome.tabs.update(id, {
+        'url' : url + sep + 'safe=strict'
+      });
+    }
+
+  } else if (engine.hasPrefix('bing')) {
+    if (!extraStrong && engine == 'bing search') {
+      if (url.contains('adlt=strict')) {
+        chrome.tabs.update(id, {
+          'url' : url.replace(/&?adlt=strict/gi, '')
+        });
+      }
+
+      return;
+    }
+
+    if (!url.contains('adlt=strict')) {
+      chrome.tabs.update(id, {
+        'url' : url + sep + 'adlt=strict'
+      });
+    }
+
+  } else if (engine.hasPrefix('yahoo')) {
+    if (!extraStrong && engine == 'yahoo search') {
+      if (url.contains('vm=r')) {
+        chrome.tabs.update(id, {
+          'url' : url.replace(/&?vm=r/gi, '')
+        });
+      }
+
+      return;
+    }
+
+    if (!url.contains('vm=r')) {
+      chrome.tabs.update(id, {
+        'url' : url + sep + 'vm=r'
+      });
+    }
+
+
+  } else if (engine.hasPrefix('ask')) {
+    url = url.replace('adt=1', '');
+    
+    if (!url.contains('adt=0')) {
+      chrome.tabs.update(id, {
+        'url' : url + sep + 'adt=0'
+      });
+    }
+
+  } else if (engine.hasPrefix('blekko')) {
+    if (!extraStrong && engine == 'blekko search') {
+      removeCookieIfNecessary('safesearch', 'http://blekko.com', pageRefresher(id, original));
+
+      return;
+    }
+
+    setCookieIfNecessary('safesearch', '1', 'http://blekko.com', '.blekko.com', pageRefresher(id, original));
+
+  } else if (engine.contains('youtube')) {
+    //setCookieIfNecessary('PREF', 'f2=8000000', 'http://youtube.com', '.youtube.com', pageRefresher(id, url), true);
+
+  } else if (engine.contains('dailymotion')) {
+    setCookieIfNecessary('family_filter', 'on', 'http://dailymotion.com', '.dailymotion.com', pageRefresher(id, url));
+
+  }
+}
+
+function setCookieIfNecessary(name, value, url, domain, append, callback) {
+  if (typeof append == 'function') {
+    callback = append;
+    append = false;
+  }
+
+  chrome.cookies.get({
+      'name' : name,
+      'url' : url
+
+    }, function (cookie) {
+      if (!cookie || cookie.value.indexOf(value) < 0) {
+        chrome.cookies.remove({
+          url : url,
+          name : name
+        }, function() {
+          var expires = new Date().getTime() + 2629743; // 43 mins???
+
+          chrome.cookies.set({
+            'domain' : domain,
+            'path' : '/',
+            'name' : name,
+            'url' : url,
+            'expirationDate' : expires,
+            'value' : (append === true ? (cookie.value + '&') : '') + value
+          }, function() {
+            if (callback) {
+              callback(true);
+            }
+          });
+        });
+      
+      } else if (callback) {
+        callback(false);
+      }
+
+    });
+}
+
+function removeCookieIfNecessary(name, url, callback) {
+  chrome.cookies.get({
+    'name' : name,
+    'url' : url
+
+  }, function(cookie) {
+    if (cookie) {
+      chrome.cookies.remove({
+        'name' : name,
+        'url' : url
+
+      }, function() {
+        if (callback) {
+          callback(true);
+        }
+      });
+    
+    } else if (callback) {
+      callback(false);
+    }
+  });
+}
+
+function pageRefresher(id, url) {
+  return function(shouldRefreshPage) {
+    if (shouldRefreshPage){
+      chrome.tabs.update(id, {
+        'url' : url
+      });
+    }
+  }
+}
+
+function generateParamExtractor(term) {
+  arguments.callee.cache = arguments.callee.cache || {};
+
+  return arguments.callee.cache[term] ? arguments.callee.cache[term] :
+          (arguments.callee.cache[term] = new RegExp('[&?]' + term + '=([a-zA-Z0-9-_+!%*\.]+)(&|$)'));
+}
+
+function performFnInChunks(fn, arr, chunkSize, thisArg) {
+  var len = arr.length, start = 0, end;
+  
+  if (!chunkSize) {
+    chunkSize = 16;
+  }
+
+  chunkSize = len < chunkSize ? len : chunkSize;
+  end = chunkSize;
+
+  while (start < len)
+  {
+      if (start + chunkSize > len)
+      end = len % chunkSize;
+
+    var subset = arr.slice(start, start + end);
+
+    if (thisArg) {
+      fn.call(thisArg, subset, start, end);
+    
+    } else {
+      fn.call(window, subset, start, end);
+    
+    }
+
+    start += chunkSize;
+  }
+}
+
+function parse_url(str, component) {
+  var query, key = ['source', 'scheme', 'authority', 'userInfo', 'user', 'pass', 'host', 'port',
+            'relative', 'path', 'directory', 'file', 'query', 'fragment'],
+    ini = (this.php_js && this.php_js.ini) || {},
+    mode = (ini['phpjs.parse_url.mode'] &&
+      ini['phpjs.parse_url.mode'].local_value) || 'php',
+    parser = {
+      php: /^(?:([^:\/?#]+):)?(?:\/\/()(?:(?:()(?:([^:@]*):?([^:@]*))?@)?([^:\/?#]*)(?::(\d*))?))?()(?:(()(?:(?:[^?#\/]*\/)*)()(?:[^?#]*))(?:\?([^#]*))?(?:#(.*))?)/,
+      strict: /^(?:([^:\/?#]+):)?(?:\/\/((?:(([^:@]*):?([^:@]*))?@)?([^:\/?#]*)(?::(\d*))?))?((((?:[^?#\/]*\/)*)([^?#]*))(?:\?([^#]*))?(?:#(.*))?)/,
+      loose: /^(?:(?![^:@]+:[^:@\/]*@)([^:\/?#.]+):)?(?:\/\/\/?)?((?:(([^:@]*):?([^:@]*))?@)?([^:\/?#]*)(?::(\d*))?)(((\/(?:[^?#](?![^?#\/]*\.[^?#\/.]+(?:[?#]|$)))*\/?)?([^?#\/]*))(?:\?([^#]*))?(?:#(.*))?)/ // Added one optional slash to post-scheme to catch file:/// (should restrict this)
+    };
+
+  var m = parser[mode].exec(str),
+    uri = {},
+    i = 14;
+  while (i--) {
+    if (m[i]) {
+      uri[key[i]] = m[i];
+    }
+  }
+
+  if (component) {
+    return uri[component.replace('PHP_URL_', '').toLowerCase()];
+  }
+  if (mode !== 'php') {
+    var name = (ini['phpjs.parse_url.queryKey'] &&
+        ini['phpjs.parse_url.queryKey'].local_value) || 'queryKey';
+    parser = /(?:^|&)([^&=]*)=?([^&]*)/g;
+    uri[name] = {};
+    query = uri[key[12]] || '';
+    query.replace(parser, function ($0, $1, $2) {
+      if ($1) {uri[name][$1] = $2;}
+    });
+  }
+  
+  delete uri.source;
+  return uri;
+}
+
+function onInstall() {
+  console.log("Extension Installed", getVersion());
+  chrome.tabs.create({'url' : 'https://metacert.com/safe-browser/parental-controls/chrome/installed.html'});
+}
+
+function onUpdate() {
+  console.log("Extension Updated", getVersion());
+}
+
+function getVersion() {
+  var details = chrome.app.getDetails();
+
+  return details.version;
+}
+
+var currVersion = getVersion(),
+    prevVersion = localStorage.getItem('metacert-version');
+
+if (currVersion != prevVersion) {
+  if (prevVersion === null || prevVersion === undefined) {
+    onInstall();
+
+  } else {
+    onUpdate();
+
+  }
+
+  localStorage['metacert-version'] = currVersion;
+}
+
+try {
+
+  if (localStorage.getItem('metacert-hotfixes-applied') != "true") {
+    applyHotfixesToCache();
+    applySecondHotfixesToCache();
+
+    localStorage.setItem('metacert-hotfixes-applied', true);
+  }
+
+  function applyHotfixesToCache() {
+    hotfixes.forEach(function(domain) {
+      localStorage.setItem(domain, 'xxx');
+
+      for (var item in localStorage) {
+        if (item.substr(0, domain.length) == domain)
+          delete localStorage[item];
+      }
+    });
+  }
+
+  function applySecondHotfixesToCache() {
+    for (var k in localStorage) {
+      if (k.length == 1)
+        delete localStorage[k];
+    }
+  }
+
+hotfixes = [
+  "extremetube.com",
+  "assextreme.com",
+  "sdeef01.blog.fc2.com",
+  "naice0000.blog.fc2.com",
+  "angelfire.com",
+  "cruelangel.net",
+  "commonastherain.com",
+  "ggoo14144.blog.fc2.com",
+  "fancapm.blog.fc2.com",
+  "apuipess.blog.fc2.com",
+  "qntks1236.blog.fc2.com",
+  "edicskw3309.blog.fc2.com",
+  "mmmop144.blog.fc2.com",
+  "moekan14.blog.fc2.com",
+  "ymm5566.blog.fc2.com",
+  "teamhvault001.blog.fc2.com",
+  "bitchtrainer.blog.fc2.com",
+  "kimjunwoo77.blog.fc2.com",
+  "teamhvault.blog.fc2.com",
+  "teamhvault005.blog.fc2.com",
+  "ebqkzh2.blog.fc2.com",
+  "aksemfwk1245.blog.fc2.com",
+  "bestb0001.blog.fc2.com",
+  "postwaynaver.blog.fc2.com",
+  "winxclubnakedlesbian.blog.fc2.com",
+  "uncensoredmanga.blog.fc2.com",
+  "mainlinkssexgaychina.blog.fc2.com",
+  "extremesmallpenis.blog.fc2.com",
+  "gayleatheruniform.blog.fc2.com",
+  "nakedteenbackgrounds.blog.fc2.com",
+  "tollywoodsexfakes.blog.fc2.com",
+  "maturesexwomen.blog.fc2.com",
+  "hotlinksgapedgayass.blog.fc2.com",
+  "girlsfromrapclips.blog.fc2.com",
+  "jailbaitnudechan.blog.fc2.com",
+  "gaylovevideos.blog.fc2.com",
+  "iranianupskirt.blog.fc2.com",
+  "nakedonmyphone.blog.fc2.com",
+  "teenmensespics.blog.fc2.com",
+  "koreanhotgirla.blog.fc2.com",
+  "sunporn.blog.fc2.com",
+  "basshunterpornstar.blog.fc2.com",
+  "hotnewsblackboypussy.blog.fc2.com",
+  "tattooofpenis.blog.fc2.com",
+  "nakedgirlswithnoface.blog.fc2.com",
+  "finalfantasyrikku.blog.fc2.com",
+  "cartoonpornjade.blog.fc2.com",
+  "blackeyepeasvideos.blog.fc2.com",
+  "minkaxxxfreepassword.blog.fc2.com",
+  "latexnudepictures.blog.fc2.com",
+  "roundbra.blog.fc2.com",
+  "mainlinkslabiaporn.blog.fc2.com",
+  "hotlinkspenisofboy.blog.fc2.com",
+  "eatassparty.blog.fc2.com",
+  "stolennakedphotos.blog.fc2.com",
+  "basshuntergangbang.blog.fc2.com",
+  "nudeavataranimation.blog.fc2.com",
+  "hotlinksnaurtohentai.blog.fc2.com",
+  "sharonmature.blog.fc2.com",
+  "tubeamateurvideos.blog.fc2.com",
+  "teenboyfucksmilf.blog.fc2.com",
+  "mainnewsallbbwporn.blog.fc2.com",
+  "mainlinkstinyametaur.blog.fc2.com",
+  "exoticpolynesiagirls.blog.fc2.com",
+  "barbarasex.blog.fc2.com",
+  "bbwfreephotos.blog.fc2.com",
+  "photonudeerotic.blog.fc2.com",
+  "littleyounggay.blog.fc2.com",
+  "bosnianamateur.blog.fc2.com",
+  "maturepubichairs.blog.fc2.com",
+  "amandarendallporn.blog.fc2.com",
+  "guerabigtits.blog.fc2.com",
+  "lizvasseynude.blog.fc2.com",
+  "hotlinksdepablocote.blog.fc2.com",
+  "analholecloseup.blog.fc2.com",
+  "disneystarsnudesboys.blog.fc2.com",
+  "perfectskinnynude.blog.fc2.com",
+  "gaynudeteenboys.blog.fc2.com",
+  "cutegayboys.blog.fc2.com",
+  "kellybundyseasonone.blog.fc2.com",
+  "britishcollegeparty.blog.fc2.com",
+  "mainnewsrussianabuse.blog.fc2.com",
+  "nakedgirlsbygirls.blog.fc2.com",
+  "hotlinksdbzmovie.blog.fc2.com",
+  "hypnothug.blog.fc2.com",
+  "nudepolishteens.blog.fc2.com",
+  "flipflopsex.blog.fc2.com",
+  "bumfun.blog.fc2.com",
+  "analfistingvid.blog.fc2.com",
+  "blondecelebrityporn.blog.fc2.com",
+  "girlsnudeonabeach.blog.fc2.com",
+  "studentboyincest.blog.fc2.com",
+  "newswwwebonyanal.blog.fc2.com",
+  "angieeverhartfeet.blog.fc2.com",
+  "phatmature.blog.fc2.com",
+  "hermionehentai.blog.fc2.com",
+  "nakedaphrodite.blog.fc2.com",
+  "iphonefreesex.blog.fc2.com",
+  "xxxthumbnailpics.blog.fc2.com",
+  "hotyoungcouples.blog.fc2.com",
+  "gaymortalkombat.blog.fc2.com",
+  "sexhongkong6742.blog.fc2.com",
+  "burtondogst72.blog.fc2.com",
+  "scubanue.blog.fc2.com",
+  "mainlinksbestialite.blog.fc2.com",
+  "mainlinkslollitahot.blog.fc2.com",
+  "nicoleraywallpaper.blog.fc2.com",
+  "daisydelahoyanude.blog.fc2.com",
+  "bestlesbianass.blog.fc2.com",
+  "mompenis.blog.fc2.com",
+  "famousincest.blog.fc2.com",
+  "deafgirldatingsex.blog.fc2.com",
+  "voungseyparties.blog.fc2.com",
+  "kurosakihentai.blog.fc2.com",
+  "katiepricexxx.blog.fc2.com",
+  "girlsbathingtogether.blog.fc2.com",
+  "sexyteengirlspics.blog.fc2.com",
+  "voyerclubgirls.blog.fc2.com",
+  "oldwomanteenboy.blog.fc2.com",
+  "nudetattoomale.blog.fc2.com",
+  "maturebritishwomen.blog.fc2.com",
+  "nudedutchswim.blog.fc2.com",
+  "mainlinksboyslagoon.blog.fc2.com",
+  "bodybuilderclones.blog.fc2.com",
+  "pornoxxxemo.blog.fc2.com",
+  "hotlinkssarahbeach.blog.fc2.com",
+  "kayleedefercelebfake.blog.fc2.com",
+  "firsttimehavegaysex.blog.fc2.com",
+  "emopenetration.blog.fc2.com",
+  "farmporntube.blog.fc2.com",
+  "hairyteensmuffs.blog.fc2.com",
+  "pokemonesorgy.blog.fc2.com",
+  "gayboundboys.blog.fc2.com",
+  "mainlinkshiphopporn.blog.fc2.com",
+  "beachpissing.blog.fc2.com",
+  "analteeny.blog.fc2.com",
+  "negronudebeach.blog.fc2.com",
+  "greeksmallpenis.blog.fc2.com",
+  "groupgirlsbreast.blog.fc2.com",
+  "tgpboysgroup.blog.fc2.com",
+  "mayinpokemonnude.blog.fc2.com",
+  "sexiestnudepicture.blog.fc2.com",
+  "mainlinksxartkatrina.blog.fc2.com",
+  "mainnewsavatarhentia.blog.fc2.com",
+  "desixxxfuck.blog.fc2.com",
+  "mainlinksfukoidol.blog.fc2.com",
+  "youngwomenclips.blog.fc2.com",
+  "alexanderswox.blog.fc2.com",
+  "mainlinkssexyteenmen.blog.fc2.com",
+  "asianshemalecream.blog.fc2.com",
+  "cougarmilftube.blog.fc2.com",
+  "funnynakedbabe.blog.fc2.com",
+  "hotlinkskatyperryass.blog.fc2.com",
+  "japancomicporn.blog.fc2.com",
+  "newsopssvagina.blog.fc2.com",
+  "nudefuskem.blog.fc2.com",
+  "jewelstaitepanties.blog.fc2.com",
+  "tallindiangirls.blog.fc2.com",
+  "oldwomenteenmodel.blog.fc2.com",
+  "bondagetape.blog.fc2.com",
+  "pregnantshemalemovie.blog.fc2.com",
+  "latinafreeporn.blog.fc2.com",
+  "nakedhawaiinpussy.blog.fc2.com",
+  "gadgethentaicomix.blog.fc2.com",
+  "gayoralsexporn.blog.fc2.com",
+  "hairylabiaupskirt.blog.fc2.com",
+  "veratinylips.blog.fc2.com",
+  "chichiporno.blog.fc2.com",
+  "deathontehentai.blog.fc2.com",
+  "blacksexclip.blog.fc2.com",
+  "blackassatlantaga.blog.fc2.com",
+  "asianslutswithbig.blog.fc2.com",
+  "hotlinkstattoogir.blog.fc2.com",
+  "girlvagina5216.blog.fc2.com",
+  "younggirlnudistsex.blog.fc2.com",
+  "hotlinksanalfairy.blog.fc2.com",
+  "sceneemogirlsvideo.blog.fc2.com",
+  "collegegirlsanal.blog.fc2.com",
+  "overdevelopedamateur.blog.fc2.com",
+  "nudefremalearmy.blog.fc2.com",
+  "amazingindians.blog.fc2.com",
+  "tittiebitch.blog.fc2.com",
+  "assridingsex.blog.fc2.com",
+  "tinydickfetish.blog.fc2.com",
+  "extremelypetitegirl.blog.fc2.com",
+  "photogaygratuithomme.blog.fc2.com",
+  "frankieteenhentai.blog.fc2.com",
+  "fatcartooncharacters.blog.fc2.com",
+  "teenaameetings.blog.fc2.com",
+  "hothornymature.blog.fc2.com",
+  "underwearvala.blog.fc2.com",
+  "alaskanude.blog.fc2.com",
+  "hotlinksgohanrapped.blog.fc2.com",
+  "asiangangraped.blog.fc2.com",
+  "iamvirginnude.blog.fc2.com",
+  "hdemogirl.blog.fc2.com",
+  "mainlinksgynopublic.blog.fc2.com",
+  "lesbianameturegirl.blog.fc2.com",
+  "pakistanigirlanal.blog.fc2.com",
+  "lockerroomnudemen.blog.fc2.com",
+  "pantyvajina.blog.fc2.com",
+  "maltesewomennaked.blog.fc2.com",
+  "artnudeblack.blog.fc2.com",
+  "youngboynude.blog.fc2.com",
+  "hotlinkspoolnudist.blog.fc2.com",
+  "newswomenboyshorts.blog.fc2.com",
+  "mainnewsebonyblow.blog.fc2.com",
+  "toonsexe.blog.fc2.com",
+  "bustyteengirlvideos.blog.fc2.com",
+  "onlineporngalleries.blog.fc2.com",
+  "hotnewsanalanimeteen.blog.fc2.com",
+  "underwatersex.blog.fc2.com",
+  "teensatnudistbeach.blog.fc2.com",
+  "amaturethroughshirt.blog.fc2.com",
+  "hotlinksbukkakeblack.blog.fc2.com",
+  "exbiihand.blog.fc2.com",
+  "mainlinksteenbestsex.blog.fc2.com",
+  "interacialsexstories.blog.fc2.com",
+  "shemalesfuckbig.blog.fc2.com",
+  "mainlinksindocoed.blog.fc2.com",
+  "nudebong.blog.fc2.com",
+  "guygirlweird.blog.fc2.com",
+  "stickamteensnude.blog.fc2.com",
+  "immatureasiancum.blog.fc2.com",
+  "asianbikinifacial.blog.fc2.com",
+  "facesittingsquirt.blog.fc2.com",
+  "blackjunioridols.blog.fc2.com",
+  "nudeartcbt.blog.fc2.com",
+  "pokemonhentaygay.blog.fc2.com",
+  "hotlinkslessteenage.blog.fc2.com",
+  "hardcorenudegirl.blog.fc2.com",
+  "gaysaunapornblog.blog.fc2.com",
+  "newsbritishblackgay.blog.fc2.com",
+  "smallpenisteenager.blog.fc2.com",
+  "gayrealitypornsites.blog.fc2.com",
+  "blackgaybodybuilders.blog.fc2.com",
+  "mainlinkslesbiangays.blog.fc2.com",
+  "amatureteenthreesome.blog.fc2.com",
+  "realgirlselfnudepic.blog.fc2.com",
+  "hotlinkssexwebsites.blog.fc2.com",
+  "fistingyoungboys.blog.fc2.com",
+  "sexynnteens.blog.fc2.com",
+  "strongnudewoman.blog.fc2.com",
+  "mainlinksmanfisting.blog.fc2.com",
+  "newssonbondagemom.blog.fc2.com",
+  "teenfunsvids.blog.fc2.com",
+  "sleepinghairy.blog.fc2.com",
+  "bidetpee.blog.fc2.com",
+  "spyvoyeurfree.blog.fc2.com",
+  "europeanamateurporn.blog.fc2.com",
+  "mainnewsuglyredhead.blog.fc2.com",
+  "sonandfathersexgay.blog.fc2.com",
+  "hotnewsnudegirlkayak.blog.fc2.com",
+  "newscumingpanty.blog.fc2.com",
+  "kendranakedbody.blog.fc2.com",
+  "chubbygaymobile.blog.fc2.com",
+  "pregoteenwithbigcock.blog.fc2.com",
+  "sexyjailbaitpics.blog.fc2.com",
+  "teensfuck.blog.fc2.com",
+  "pornwebsiterating.blog.fc2.com",
+  "redridinghoodlesbian.blog.fc2.com",
+  "oldwomendrunk.blog.fc2.com",
+  "diaperhandjob.blog.fc2.com",
+  "sockspissing.blog.fc2.com",
+  "youngcandidsock.blog.fc2.com",
+  "verypalenuderussian.blog.fc2.com",
+  "sexyschoolboy.blog.fc2.com",
+  "rickymartinnudenaked.blog.fc2.com",
+  "toplessatboy.blog.fc2.com",
+  "hotlinkssexanimebabe.blog.fc2.com",
+  "mayhentaigif.blog.fc2.com",
+  "streampuppyvideo.blog.fc2.com",
+  "bestjailbaitpics.blog.fc2.com",
+  "matureanalpussy.blog.fc2.com",
+  "mainlinksbmxxxxporn.blog.fc2.com",
+  "amateurwifegabi.blog.fc2.com",
+  "teenagegirlpubichair.blog.fc2.com",
+  "toplessbechyoung.blog.fc2.com",
+  "hotlinkspornteengirl.blog.fc2.com",
+  "eurocollegegirls.blog.fc2.com",
+  "mainlinkshugepoop.blog.fc2.com",
+  "jaxonschgg.blog.fc2.com",
+  "tatooandvagia.blog.fc2.com",
+  "sweetchinanakedboys.blog.fc2.com",
+  "laurasurrich5172.blog.fc2.com",
+  "asslickingporno.blog.fc2.com",
+  "motherwank.blog.fc2.com",
+  "hotmaturebigtitsnude.blog.fc2.com",
+  "nuidstphotos.blog.fc2.com",
+  "hotlinksexbiirussian.blog.fc2.com",
+  "momgivingahanddjob.blog.fc2.com",
+  "grouplingeriemodels.blog.fc2.com",
+  "mainlinkstoiletgroup.blog.fc2.com",
+  "hotlinksfuskemcouple.blog.fc2.com",
+  "importmodelsfucking.blog.fc2.com",
+  "toplessjapanesebeach.blog.fc2.com",
+  "familiesnud.blog.fc2.com",
+  "sexyteensselfpic.blog.fc2.com",
+  "veryyoungsexvideos.blog.fc2.com",
+  "hotlinksturkishsex.blog.fc2.com",
+  "chubbynudemilf.blog.fc2.com",
+  "dpsleep.blog.fc2.com",
+  "hotlinkshairmenasia.blog.fc2.com",
+  "hotbeautifulboys.blog.fc2.com",
+  "emilyosmentfakenudes.blog.fc2.com",
+  "cameltoeskinny.blog.fc2.com",
+  "kendraplayboyvagin.blog.fc2.com",
+  "bikinihomemade.blog.fc2.com",
+  "hotlinkssharkstatoo.blog.fc2.com",
+  "hotlinkschinahandjob.blog.fc2.com",
+  "sexygirlsnaked.blog.fc2.com",
+  "lesbiananal.blog.fc2.com",
+  "mexicanboobs.blog.fc2.com",
+  "mainlinksturkisporno.blog.fc2.com",
+  "hardcorehenai.blog.fc2.com",
+  "hairylatino.blog.fc2.com",
+  "petitegirlshower.blog.fc2.com",
+  "youngskinnylesbian.blog.fc2.com",
+  "nakeddenisemilani.blog.fc2.com",
+  "newsvintagemature33.blog.fc2.com",
+  "newstattooonavagina.blog.fc2.com",
+  "hotlinkstiffanynuda.blog.fc2.com",
+  "amateurebonylesbian.blog.fc2.com",
+  "nudecoeds.blog.fc2.com",
+  "blondeassfuckedhard.blog.fc2.com",
+  "tweenienn.blog.fc2.com",
+  "hotlatinapicture.blog.fc2.com",
+  "emoteens.blog.fc2.com",
+  "hotlinkstoypervers.blog.fc2.com",
+  "furryyiffyiff.blog.fc2.com",
+  "dbgtxxx.blog.fc2.com",
+  "nakedyounggothic.blog.fc2.com",
+  "freelonglesbianclips.blog.fc2.com",
+  "blackbigtitsgangbang.blog.fc2.com",
+  "jailbaitbikinis.blog.fc2.com",
+  "pokemonhentiavideos.blog.fc2.com",
+  "batmansex.blog.fc2.com",
+  "trippingtheriftnaked.blog.fc2.com",
+  "teenbootyxxxmpegs.blog.fc2.com",
+  "asiananalplay.blog.fc2.com",
+  "teenshippieshot.blog.fc2.com",
+  "hotlinksdrunkpiggirl.blog.fc2.com",
+  "severeanaldiscipline.blog.fc2.com",
+  "pornhup.blog.fc2.com",
+  "blacklesbianskissing.blog.fc2.com",
+  "sistersuckscocks.blog.fc2.com",
+  "momandboymovies.blog.fc2.com",
+  "maturemobileporn.blog.fc2.com",
+  "midgetintercourse.blog.fc2.com",
+  "oldestgrannyclips.blog.fc2.com",
+  "hotlinksozpornboys.blog.fc2.com",
+  "hotlinksnudistthong.blog.fc2.com",
+  "burningmannaked8914.blog.fc2.com",
+  "nudemexicanamatures.blog.fc2.com",
+  "youngtvstarsnude.blog.fc2.com",
+  "fastwomen.blog.fc2.com",
+  "balletsdex.blog.fc2.com",
+  "toplessteenvoyeur.blog.fc2.com",
+  "asianmilfsites.blog.fc2.com",
+  "girlwithnotitsfucked.blog.fc2.com",
+  "hotlinksdickupbum.blog.fc2.com",
+  "girlsnudelockerroom.blog.fc2.com",
+  "sandrapokemonhot.blog.fc2.com",
+  "francisrog93.blog.fc2.com",
+  "muscularwomannude.blog.fc2.com",
+  "hotnewswrestlegay.blog.fc2.com",
+  "asianxxxsite.blog.fc2.com",
+  "mainlinksblackpicsex.blog.fc2.com",
+  "asianporndvd.blog.fc2.com",
+  "nudistrussianbeach.blog.fc2.com",
+  "youngasianssucking.blog.fc2.com",
+  "blackafricangirls.blog.fc2.com",
+  "interracialstream.blog.fc2.com",
+  "hotlinksdrinkcumwife.blog.fc2.com",
+  "nakedfuckingmovies.blog.fc2.com",
+  "hotnewsxlgirlsnaked.blog.fc2.com",
+  "sonicnudesprites.blog.fc2.com",
+  "akadot.com",
+  "asianbabesdatabase.com",
+  "xxxratemypic.com",
+  "bestblowjobteens.com",
+  "isitworthjoining.com",
+  "asianpornfantasy.com",
+  "dvdbox.com",
+  "pornex.com",
+  "queerclick.com",
+  "sex.com",
+  "imagefap.com",
+  "yobt.com",
+  "sexvideomix.com",
+  "myxxxblog.com",
+  "bustyteenslut.com",
+  "totallynsfw.com",
+  "xxxmsncam.com",
+  "cliphunter.com",
+  "indiangirl.xxx",
+  "spugle.com",
+  "xxxswim.com",
+  "asianmystery.com",
+  "madthumbs.com",
+  "pussyticket.com",
+  "asiananalsex.net",
+  "alljapanesepass.com",
+  "freebizarrelinks.com",
+  "passionshop.com",
+  "crocreview.com",
+  "pornverified.com",
+  "pichunter.com",
+  "tube8.com",
+  "redtube.com",
+  "analassteens.com",
+  "sexyasianpornclips.com",
+  "asiannudegirlsporn.net",
+  "topanalvideos.com",
+  "asiangirlsxxxvideos.com",
+  "asianteenspornvideos.com",
+  "iseekgirls.com",
+  "kabukicho-girls.com",
+  "beautifulasiansex.com",
+  "sexasianxxx.com",
+  "firsttimeanalsexvideo.com",
+  "asiansexeden.com",
+  "fritchy.com",
+  "movieasiansex.com",
+  "asianpornextreme.com",
+  "tubeband.com",
+  "rextube.com",
+  "moohoney.com",
+  "analsexpornclips.net",
+  "nastyrat.com",
+  "superxxxpictures.com",
+  "dickuptube.com",
+  "japanesexxxvideos.net",
+  "gaysexhdmovies.com",
+  "analpornscene.com",
+  "salutmoms.com",
+  "allasianteen.net",
+  "siventeens.org",
+  "sexasianpicture.com",
+  "dumpstersluts.com",
+  "analsexxxxphotos.net",
+  "phat-ass.org",
+  "sexanalclip.com",
+  "hiasiananal.com",
+  "analmoviesxxx.com",
+  "teensexasian.com",
+  "amateuranalxxxvideos.com",
+  "idols69.com",
+  "orientalfuckwhores.com",
+  "loypornvid.com",
+  "asiangirlspornpics.net",
+  "teenanalsexvideo.com",
+  "asianslave.biz",
+  "pornhardcoreonlinemovies.com",
+  "japanpornmovies.net",
+  "analpicturesex.com",
+  "asiansexteenvideo.net",
+  "ocxxxanalblog.com",
+  "asianboygaysex.com",
+  "oopsmovs.com",
+  "kporno.com",
+  "twinkanal.net",
+  "hornyteensporn.com",
+  "analsexpornvideos.net",
+  "hottestanalsex.com",
+  "bigtitsboobs.net",
+  "str8up.com",
+  "lingerie-videos.com",
+  "lustypuppy.com",
+  "porn-w.org",
+  "orgygirlssexblog.com",
+  "interracialsexhell.com",
+  "xvideos.com",
+  "rexmag.com",
+  "porn.com",
+  "imageweb.ws",
+  "videosexasian.com",
+  "orgasm.com",
+  "thefrisky.com",
+  "sexmovieshot.com",
+  "animejungle.net",
+  "turboimagehost.com",
+  "sexy-toons.org",
+  "korasian.com",
+  "hentai-kawaii.com",
+  "xxxtentaclehentai.com",
+  "worldsladies.com",
+  "ffantasyh.com",
+  "adultanimecartoon.com",
+  "pronquest.com",
+  "hentaidoujindownload.com",
+  "ipixler.com",
+  "iluvtoons.com",
+  "fetishpassions.com",
+  "planetclimax.com",
+  "hentai-and-fetish-galleries.com",
+  "forfreehentai.com",
+  "popularpages.net",
+  "anime-hentai.org",
+  "megawank.com",
+  "boobytwister.com",
+  "hentaigeeks.com",
+  "intporn.com",
+  "animeonsen.com",
+  "filesquick.com",
+  "hentairing.com",
+  "merrytoons.com",
+  "comicstale.com",
+  "zombooru.com",
+  "cartoonoil.com",
+  "onlinenarutohentai.com",
+  "wallsave.com",
+  "animextremist.com",
+  "sodahead.com",
+  "myconfinedspace.com",
+  "drtuber.com",
+  "libidot.org",
+  "zerochan.net",
+  "anime-planet.com",
+  "mangatraders.com",
+  "goodmanga.net",
+  "jizzrx.com",
+  "katsumiblog.com",
+  "keymochi.com",
+  "kingrpg.net",
+  "kira-fansub.com",
+  "kronos.mcanime.net",
+  "kurogane.animeblogger.net",
+  "ladyblitz.com",
+  "latina-porn.org",
+  "latintubeporn.com",
+  "lbfm-lover.com",
+  "lespetitescharmeuses.com",
+  "lilblackbook.com",
+  "lists.topica.com",
+  "littleasiangirlfriends.net",
+  "livepipincams.com",
+  "livevideo.com",
+  "lowbird.com",
+  "mademan.com",
+  "mainporno.com",
+  "majhost.com",
+  "manbukkake.thumblogger.com",
+  "manga4s.com",
+  "mangafox.me",
+  "mangago.com",
+  "mangaplexe.com",
+  "mangatraders.com",
+  "marmottarammler.blogspot.com",
+  "massage-nuru.com",
+  "mastertubexxx4u.com",
+  "matureasian.org",
+  "mayorsparadise.com",
+  "mikuland.com",
+  "missmyass.com",
+  "moregirls.org",
+  "mota.ru",
+  "muchodoujins.net",
+  "naked-anime.com",
+  "narutohentai.banzaihosting.com",
+  "narutoporn.banzaihosting.com",
+  "narutoxxx.com",
+  "nastyslidetube.com",
+  "newz66.wordpress.com",
+  "newz8.wordpress.com",
+  "newz88.wordpress.com",
+  "nicedaily-photo.blogspot.com",
+  "nomadicotaku.wordpress.com",
+  "noworrytube.com",
+  "nsfwmind.tumblr.com",
+  "ocxxxasianblog.com",
+  "ohentai.com",
+  "oishiianime.com",
+  "omgmanga.com",
+  "onehornyworld.tumblr.com",
+  "openwalls.com",
+  "oralsexhdvideos.com",
+  "oralsexinstructions4595.pornblink.com",
+  "orientalmaidens.com",
+  "orihimehentai.com",
+  "otbhentai.com",
+  "outlinks.com",
+  "pazvegasexscene9531.pornblink.com",
+  "peluchofilia.com",
+  "peniscult.com",
+  "peperonity.com",
+  "perfectmovieporn.com",
+  "phantomanime.wordpress.com",
+  "pinkie-and-blackie.com",
+  "pontocomvoce.compontocomvoce.compontocomvoce.com.yourasiansex.com",
+  "pornfollow.com",
+  "pornjumper.com",
+  "pornmox.com",
+  "pornokinki.com",
+  "pornrabbit.com",
+  "pornthebest.blogspot.com",
+  "porntubexi.com",
+  "porntuna.blogspot.com",
+  "postyourblack.com",
+  "pov-palace.com",
+  "primeasianporn.com",
+  "primehentai.com",
+  "proporn.com",
+  "prostituteblog.com",
+  "pubetat.blog.fc2.com",
+  "pussybook.org",
+  "pussytypes.com",
+  "qazieru.deviantart.com",
+  "raunchyanal.com",
+  "ravenrepublic.net",
+  "raw1st.com",
+  "redchilitube.com",
+  "residenciayuri.foroactivos.net",
+  "robsxxx.com",
+  "rockinroll.org",
+  "sankakucomplex.com",
+  "seaporn.org",
+  "seventhstyle.com",
+  "sex.wonderful-photos.com",
+  "sexfreedomtube.com",
+  "sexmenu.net",
+  "sexnota.com",
+  "sexoasis.com",
+  "sexpicanal.com",
+  "sextube88.com",
+  "sextubeportal.com",
+  "sextubster.com",
+  "sexwide.com",
+  "sexyaltgirls.com",
+  "sexycartoonporn.net",
+  "sexyhentaiporn.net",
+  "sexytoons.dk",
+  "shemalehentaicomics.net",
+  "shernteens.org",
+  "simpsonspornparody.net",
+  "sling-bikini-anime.blogspot.com",
+  "smanavi.net",
+  "soloass.com",
+  "sosexygirl.com",
+  "southgloucestershireadultservices3297.pornblink.com",
+  "stoptazmo.com",
+  "submissiveblowjob.com",
+  "subtletimes.wordpress.com",
+  "sugoiblog.com",
+  "svhunters.com",
+  "sweetasiantube.com",
+  "sweetgaytube.net",
+  "sx11.blogspot.com",
+  "taringa.net",
+  "teenselfshooter.com",
+  "teensenty.org",
+  "tehthul.net",
+  "tenchimuyohentaisex.com",
+  "tenmanga.com",
+  "tentaclearmada.com",
+  "theblackalley.com",
+  "thechive.com",
+  "thecsph.org",
+  "tiny-asians.com",
+  "togehot.blogspot.com",
+  "toongayxxx.com",
+  "topsexweb.com",
+  "trannyearth.com",
+  "twatlinks.com",
+  "unit.gosexpod.com",
+  "vaizardnosekai.net",
+  "videoart.net",
+  "vidsniches.com",
+  "vnsharing.net",
+  "voomxx.com",
+  "voreville.com",
+  "wetsextube.com",
+  "white-teen.com",
+  "wifemovies.net",
+  "wikiporntube.net",
+  "helpers.vinchenco.net.ua",
+  "kinghost.com",
+  "xnxx-5.org",
+  "xxx-adult-toons.com",
+  "xxxmsntube.com",
+  "xxxtree.com",
+  "yepporn.com",
+  "youngasiangfs.thumblogger.com",
+  "yourasiansex.com",
+  "yourtgirls.com",
+  "zerochan.net",
+  "100sexygirl.com",
+  "3d-xxx-comix.com",
+  "1analsex.com",
+  "3danimesex.net",
+  "3dfantasies.net",
+  "3xhentai.com",
+  "6sx.net",
+  "accessanimeporn.com",
+  "adultism.com",
+  "adultdisneyporn.com",
+  "agwallpapers.blogspot.com",
+  "alphaporno.com",
+  "amateurasianpornhunters.com",
+  "amateurblowjobsvideo.com",
+  "amateurteensex.net",
+  "analhellblog.com",
+  "anime-fanservice.org ",
+  "anime-sluts.com",
+  "anime3dsluts.com",
+  "animefreehentai.com",
+  "animegratis.net",
+  "animemonster.org",
+  "animepornblog.com",
+  "animepornosex.com",
+  "apriloneilblog.sexusblog.com",
+  "asiabargirls.com",
+  "asialadyboys.thumblogger.com",
+  "asian-deepthroat.com",
+  "asian-pov.com",
+  "asiananalporno.net",
+  "asiananalvids.com",
+  "asiannalsex.pornblogspace.com",
+  "asiananalvids.com",
+  "asiangaytwink.thumblogger.com",
+  "asianladies69.com",
+  "asianpornpic.info",
+  "asians-sextube.info",
+  "asiansexhd.livesexbook.com",
+  "asiansexqueens.com",
+  "asiansexthrills.com",
+  "asiansexvideos.pornlivenews.com",
+  "asianshemaleporn.org",
+  "asianslutsfucked.com",
+  "asiansxxxtube.com",
+  "assfuckcafe.com",
+  "avjapanporn.com",
+  "bajatehentai.com",
+  "barfinegirls.com",
+  "barstoolsports.com",
+  "basicporno.com",
+  "beautifulshemales.net",
+  "big-boobs-nude.blogspot.com",
+  "big-tits-model.com",
+  "bigmusclebabes.com",
+  "bishoujoproject.com",
+  "bleachhentai.banzaihosting.com",
+  "bleachhentaiporn.freehentaihost.com",
+  "blog.alphamaleundies.com",
+  "blog.bestasianblowjob.com",
+  "blog.chucksanimeshrine.com",
+  "blog.livedoor.jp",
+  "blog.xxxymovies.com",
+  "blogtruyen.com",
+  "blondnackedfuck.blog.fc2.com",
+  "blowjobasian.org",
+  "blowjobhdmovies.com",
+  "blowjobs.ramitinme.com",
+  "blowjobstars.com",
+  "bondageblog.com",
+  "boston.barstoolsports.com",
+  "brycemilburn.blogspot.com",
+  "candidteengirlfriends.com",
+  "cartoon-porno.info",
+  "cartoonsbank.com",
+  "celebritysmackblog.com",
+  "chaozhide.com",
+  "chineseporn69.com",
+  "chopstickbabes.com",
+  "comicstroll.com",
+  "craneanime.com",
+  "cultandexploitation.blogspot.com",
+  "cutejapanesexxx.net",
+  "dailyboobsporn.com",
+  "deviateden.com",
+  "domorebutts.com",
+  "doujinmangahentai.com",
+  "dragongirlz.com",
+  "drtuber.com",
+  "dumpaday.com",
+  "ebenezereny.net",
+  "ebenezersplooge.com",
+  "ecchinews.com",
+  "egotastic.com",
+  "eliteasianvids.com",
+  "emicteens.org",
+  "en.peperonity.com",
+  "eronew.com",
+  "etuber.com",
+  "evan.lankyland.com",
+  "extremal-asians.com",
+  "fabrieltravieso.blogspot.com",
+  "falart.com",
+  "family-guy-hentai.com",
+  "fanpop.com",
+  "fantasticasia.ru/",
+  "fatestaynight.freehentaihost.com",
+  "femdomhentai.org",
+  "firstanalvideos.com",
+  "firstasiantube.com",
+  "fishmpegs.com",
+  "forbiddenasian.com",
+  "free-best-sex.com",
+  "free-hentai.ws",
+  "free-vidz.com",
+  "freeheaven.com",
+  "freemobilepornvideos.net",
+  "freeoboi.ru",
+  "freeonlinehentai.com",
+  "freepicturesoflesbiansex5019.pornblink.com",
+  "freeporn4hotsex.com",
+  "freshsextube.com",
+  "fuckjob.com",
+  "futanari.erolove.in",
+  "futanari.hentaierotica.net",
+  "futuramalespiansex.blog.fc2.com",
+  "gay-cartoon-cock.com",
+  "gayassgratis.sexusblog.com",
+  "gaysexfreevids.sensualwriter.com",
+  "gaysissyferronetwork.howgreenismyblog.com",
+  "getafuck.net",
+  "gifsy.com",
+  "girlsoutwestrocks.com",
+  "girlvideoshow.com",
+  "goalporn.com",
+  "goodfilmsg.ru",
+  "goodnaked.blogspot.com",
+  "gorgeousanime.com",
+  "gorgeousblowjobs.com",
+  "gosexpod.com",
+  "grannyporn.name",
+  "gundamhentai.com",
+  "hackedselfpics.com",
+  "hardcorestreamingporn6710.pornblink.com",
+  "hdxxxmovies.com",
+  "hellotubes.com",
+  "hentai-3d.net",
+  "hentai-asiatique.com",
+  "hentai-fap.com",
+  "hentai-toto.com",
+  "hentai.org.es",
+  "hentai.sexblog.pw",
+  "hentai.tc",
+  "hentai.vniz.net",
+  "hentaiartists.org",
+  "hentaigamepad.com",
+  "hentaigratuit.org",
+  "hentaisexgifs.com",
+  "hentaistar.centerblog.net",
+  "hentaisupply.com",
+  "hentaiwiki.com",
+  "hiasiansex.com",
+  "hirespornmovies.com",
+  "hornyasiansex.com",
+  "hot-girl-asian-girl.com",
+  "hot-girls-picture.blogspot.com",
+  "hot-teen-clips.blogspot.com",
+  "hotgfs.com",
+  "hotindiangirlsclips.com",
+  "hottestsexpic.com",
+  "howimetyourotaku.wordpress.com",
+  "hugeanalinsertion5098.pornblink.com",
+  "hugeanimeboobs.com",
+  "i-like-nsfw.com",
+  "images.crunkmovies.com",
+  "insaneasia.com",
+  "japanese-anal.com",
+  "japanese-videos.net",
+  "japanese.xxxblogporn.com",
+  "japemonster.com",
+  "adult-cafe.com",
+  "adult-sweet.net",
+  "potechibon.x.fc2.com",
+  "ho-kagogroup.com",
+  "h-ken.net",
+  "mastershun.fc2web.com",
+  "itatsuku.jp",
+];
+} catch(e) {
+  // do nothing
+}
+})();
