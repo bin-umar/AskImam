@@ -50,7 +50,7 @@
                           </div>
                           <div class="col-3">
                               <button class="btn btn-light">
-                                  <a href="#">Answers ({{ question.answer_count }})</a>
+                                  <a href="{% url 'question' question.pk %}#answers">Answers ({{ question.answer_count }})</a>
                               </button>
                           </div>
                       </div>

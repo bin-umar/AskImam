@@ -1,20 +1,34 @@
-<div class="card login">
-  <div class="card-header">LogIn</div>
-  <div class="card-body">
-      <form method="post" id="logIn">
-          <div class="form-group">
-            <label for=email>Email address</label>
-            <input type=email name=email class=form-control id=email placeholder=example@mail.com required>
-          </div>
-          <div class="form-group">
-            <label for=password>Password</label>
-            <input type=password name=password minlength="4" class="form-control" id="password" placeholder="********" required>
-          </div>
-          <div class="d-flex justify-content-end">
-            <small class="form-text errorLogin"></small>
-            <button type="submit" class="btn btn-secondary ask-btn w-25">Log In</button>
-          </div>
-           <input type="hidden" name="next" value="{{ request.GET.next }}">
-      </form>
-  </div>
-</div>
+{% extends "base.html"%}
+{% load static %}
+
+{% block title %}
+    Login -
+{% endblock %}
+
+{%block content%}
+    <div class="card login">
+      <div class="card-header">LogIn</div>
+      <div class="card-body">
+          <form method="post" id="logIn">
+              <div class="form-group">
+                <label for=email>Email address</label>
+                <input type=email name=email class=form-control id=email placeholder=example@mail.com required>
+              </div>
+              <div class="form-group">
+                <label for=password>Password</label>
+                <input type=password name=password minlength="4" class="form-control" id="password" placeholder="********" required>
+              </div>
+              <div class="d-flex justify-content-end">
+                <small class="form-text errorLogin"></small>
+                <button type="submit" class="btn btn-secondary ask-btn w-25">Log In</button>
+              </div>
+               <input type="hidden" name="next" value="{{ next }}">
+          </form>
+      </div>
+    </div>
+    <div class="card login">
+        <div class=card-body>
+            <div class="text-center">Don't have an account? <a href="/signup">Sign up</a></div>
+        </div>
+    </div>
+{% endblock %}

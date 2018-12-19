@@ -19,12 +19,12 @@
           </div>
       </div>
   </div>
-    <div class="answers-block">
+    <div class="answers-block" id="answers">
         <div class="border-bottom">
             <h4>{{ question.answer_count }} Answer{% if question.answer_count > 1 %}s{% endif %}:</h4>
         </div>
         {% for answer in answers %}
-            <div class="row margin-top-10">
+            <div class="row margin-top-10" id="answer_{{ answer.pk }}">
                 <div class="padding-top-20">
                     {% include 'inc/avatar_block.html' with rate=answer.rate %}
                 </div>
@@ -48,13 +48,13 @@
         {% endfor %}
     </div>
     <div class="new-answer">
-        <form method="post">
+        <form method="post" action="/answer/{{ question.pk }}/">
             {% csrf_token %}
             <div class="margin-top-30">
             <h4> Your answer</h4>
             </div>
             <div>
-                <textarea title="answer" id="tinymce"></textarea>
+                <textarea name="text" title="answer" id="tinymce"></textarea>
             </div>
             <div class="d-flex justify-content-end margin-top-20">
                 <button type="submit" class="btn btn-secondary ask-btn w-25">Submit answer</button>

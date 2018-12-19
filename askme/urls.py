@@ -11,6 +11,7 @@ urlpatterns = [
     path('ask/',          views.ask,            name="ask"),
     path('profile/',      views.profile,        name="profile"),
     path('question/<int:pk>/', views.question,  name='question'),
+    path('answer/<int:question_id>/', views.answer,       name='answer'),
     path('questions/<slug:filter>', views.list_questions, name="filteredIndex"),
     path('tinymce/', include('tinymce.urls')),
 ]

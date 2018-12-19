@@ -39,6 +39,24 @@ function csrfSafeMethod(method) {
     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
 }
 
+function senPost(url, data, error) {
+    $.post(
+        url,
+        data,
+        function(response) {
+            if (!response.status) {
+                var data = response.message;
+                Object.keys(data).forEach(function (key) {
+                    error.html(key + ": " + data[key].toString());
+                });
+            } else
+                $(location).attr('href', response.message);
+      }
+    ).fail(function(jqXHR, textStatus, err) {
+          alert('text status ' + textStatus + ', err ' + err)
+    });
+}
+
 $.ajaxSetup({
     beforeSend: function(xhr, settings) {
         if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
@@ -59,22 +77,9 @@ jQuery(document).ready(function() {
 
       if (next === '') next = '/';
 
-      $.post(
-          "/login/",
-          { "email": email, "password": password, "next": next },
-          function(response) {
-              if (!response.status) {
-                  var data = response.message;
-                  Object.keys(data).forEach(function (key) {
-                      error.html(key + ": " + data[key].toString());
-                  });
-              }
-              else
-                  $(location).attr('href', response.message);
-          }
-      ).fail(function(jqXHR, textStatus, err) {
-          alert('text status ' + textStatus + ', err ' + err)
-      });
+      senPost("/login/" ,
+             { "email": email, "password": password, "next": next },
+                  error);
   });
 
   $("#signUp").on("submit", function (event) {
@@ -89,22 +94,23 @@ jQuery(document).ready(function() {
       if (password1 !== password2) {
           error.html("Passwords doesn't match");
       } else {
-          $.post(
-              "/signup/",
-              { "username": username, "email": email, "password1": password1, "password2": password2 },
-              function(response) {
-                  if (!response.status) {
-                      var data = response.message;
-                      Object.keys(data).forEach(function (key) {
-                          error.html(key + ": " + data[key].toString());
-                      });
-                  } else
-                      $(location).attr('href', response.message);
-              }
-          ).fail(function(jqXHR, textStatus, err) {
-              alert('text status ' + textStatus + ', err ' + err)
-          });
+          senPost("/signup/" ,
+                 { "username": username, "email": email, "password1": password1, "password2": password2 },
+                      error);
       }
+  });
+
+  $("#askForm").on("submit", function (event) {
+
+      event.preventDefault();
+      var title = $("#title").val(),
+          text = $("#tinymce").val(),
+          tags = $("#tags").val(),
+          error = $('.errorSignup').eq(0);
+
+      senPost("/ask/" ,
+             { "title": title, "text": text, "tags": tags },
+                  error);
   });
 
 });

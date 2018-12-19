@@ -9,21 +9,21 @@
     <h3 class="ask-form-title">Ask new Question</h3>
     <div class="card ask-form">
         <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
+            <form method="post" id="askForm">
                 <div class="form-group">
                     <label for="title">Question title:</label>
-                    <input class="form-control" type="text" id="title" name="title" placeholder="How to do ..?">
+                    <input class="form-control" type="text" id="title" placeholder="How to do ..?" required minlength="8">
                 </div>
                 <div class="form-group">
                     <label for="tinymce">Question text:</label>
-                    <textarea id="tinymce" class="form-control" rows="5" name="text" placeholder="Some text ..."></textarea>
+                    <textarea id="tinymce" name="text" class="form-control" rows="8" placeholder="Some text ..." minlength="20"></textarea>
                 </div>
                 <div class="form-group">
                     <label for="tags">Tags:</label>
-                    <input class="form-control" type="text" id="tags" name="tags" placeholder="tag">
+                    <input class="form-control" type="text" id="tags" placeholder="tag">
                 </div>
                 <div class="d-flex justify-content-end">
+                    <small class="form-text errorSignup"></small>
                     <button type="submit" class="btn btn-secondary ask-btn w-25">Ask Question!</button>
                 </div>
             </form>

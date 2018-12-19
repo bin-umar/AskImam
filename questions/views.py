@@ -5,6 +5,7 @@ from questions.forms import *
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, logout as d_logout, login as d_login
 from django.contrib.auth.decorators import login_required
+from urllib import parse
 
 
 def pager(request, iterable):
@@ -66,8 +67,9 @@ def login(request):
                     return status_response(False, {'login': 'Login or password is wrong!!'})
         else:
             return status_response(False, form.errors)
-    
-    return render(request, "logsup.html")
+
+    next = parse.urlparse(request.META.get('HTTP_REFERER')).path
+    return render(request, "login.html", {'next': next})
 
 
 @login_required
@@ -89,12 +91,36 @@ def sign_up(request):
         else:
             return status_response(False, form.errors)
 
-    return render(request, "logsup.html")
+    return render(request, "signup.html")
 
 
 @login_required(login_url='/login/')
 def ask(request):
+    if request.POST:
+        form = QuestionsForm(request.user, request.POST)
+        if form.is_valid():
+            question = form.save(request.POST.get('tags'))
+            return status_response(True, "/question/" + str(question.pk))
+        else:
+            return status_response(False, form.errors)
+
     return render(request, "ask.html")
+
+
+@login_required(login_url='/login/')
+def answer(request, question_id):
+    if request.POST:
+        form = AnswerForm(request.user, request.POST)
+        if form.is_valid():
+            try:
+                question = Question.objects.get(pk=question_id)
+            except Question.DoesNotExist:
+                return redirect(reverse('index'))
+            else:
+                answer = form.save(question)
+            return redirect(reverse('question', kwargs={'pk': question.pk}) + '#answer_' + str(answer.pk))
+        else:
+            return redirect("/question/" + str(question_id)) #It should be replaced with error page
 
 
 @login_required(login_url='/login/')
