@@ -39,7 +39,7 @@ def list_questions(request, filter=None):
 
     questions = pager(request, questions)
 
-    return render(request, "list_questions.html", {
+    return render(request, 'list_questions.html', {
         'questions': questions
     })
 
@@ -69,7 +69,7 @@ def login(request):
             return status_response(False, form.errors)
 
     next = parse.urlparse(request.META.get('HTTP_REFERER')).path
-    return render(request, "login.html", {'next': next})
+    return render(request, 'login.html', {'next': next})
 
 
 @login_required
@@ -87,11 +87,11 @@ def sign_up(request):
             raw_password = form.cleaned_data.get('password1')
             user = authenticate(username=username, password=raw_password)
             d_login(request, user)
-            return status_response(True, "/")
+            return status_response(True, '/')
         else:
             return status_response(False, form.errors)
 
-    return render(request, "signup.html")
+    return render(request, 'signup.html')
 
 
 @login_required(login_url='/login/')
@@ -100,11 +100,11 @@ def ask(request):
         form = QuestionsForm(request.user, request.POST)
         if form.is_valid():
             question = form.save(request.POST.get('tags'))
-            return status_response(True, "/question/" + str(question.pk))
+            return status_response(True, '/question/' + str(question.pk))
         else:
             return status_response(False, form.errors)
 
-    return render(request, "ask.html")
+    return render(request, 'ask.html')
 
 
 @login_required(login_url='/login/')
@@ -120,18 +120,71 @@ def answer(request, question_id):
                 answer = form.save(question)
             return redirect(reverse('question', kwargs={'pk': question.pk}) + '#answer_' + str(answer.pk))
         else:
-            return redirect("/question/" + str(question_id)) #It should be replaced with error page
+            return redirect('/question/' + str(question_id)) #It should be replaced with error page
 
 
 @login_required(login_url='/login/')
 def profile(request):
-    return render(request, "profile.html")
+    return render(request, 'profile.html')
 
 
 def question(request, pk):
     one_question = Question.objects.get(pk=pk)
     answers = Answer.objects.filter(question_id=pk)
-    return render(request, "question.html", {
+    one_is_true = answers.filter(is_true=True).count() >= 1
+    print(one_is_true)
+    print(answers.filter(is_true=True).count())
+    return render(request, 'question.html', {
         'question': one_question,
+        'one_is_true': one_is_true,
         'answers': answers
     })
+
+
+@login_required(login_url='/login/')
+def vote(request):
+    if request.POST:
+        form = VoteForm(request.user, request.POST)
+        if form.is_valid():
+            cdata = form.cleaned_data
+            if cdata['obj_name'] == 'answer':
+                try:
+                    answer = Answer.objects.get(pk=cdata['obj_id'])
+                except Answer.DoesNotExist:
+                    return status_response(False, {'answer': 'Answer by this doesn\'t exist'})
+                else:
+                    form.save(answer)
+            else:
+                try:
+                    question = Question.objects.get(pk=cdata['obj_id'])
+                except Question.DoesNotExist:
+                    return status_response(False, {'question': 'Question by this doesn\'t exist'})
+                else:
+                    form.save(question)
+
+            return status_response(True, 'Vote successfully added')
+        else:
+            return status_response(False, form.errors)
+
+
+@login_required(login_url='/login/')
+def set_answer_true(request, q_id, a_id):
+    try:
+        Question.objects.get(pk=q_id)
+    except Question.DoesNotExist:
+        return status_response(False, 'Couldn\'t find question by this id')
+    else:
+        try:
+            answer = Answer.objects.get(pk=a_id)
+        except Answer.DoesNotExist:
+            return status_response(False, 'Couldn\'t find answer by this id')
+        else:
+            is_true = request.POST.get('is_true', False)
+            if is_true == 'true':
+                is_true = True
+            elif is_true == 'false':
+                is_true = False
+            answer.is_true = is_true
+            answer.save()
+
+    return status_response(True, 'Successfully')

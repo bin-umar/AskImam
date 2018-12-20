@@ -1,5 +1,5 @@
-var hijri = document.getElementById("hijri");
-var grigorian = document.getElementById("grigorian");
+var hijri = document.getElementById('hijri');
+var grigorian = document.getElementById('grigorian');
 
 hijri.innerHTML = HijriJS.todayHijri();
 grigorian.innerHTML = HijriJS.todayGregorian();
@@ -47,10 +47,11 @@ function senPost(url, data, error) {
             if (!response.status) {
                 var data = response.message;
                 Object.keys(data).forEach(function (key) {
-                    error.html(key + ": " + data[key].toString());
+                    error.html(key + ': ' + data[key].toString());
                 });
-            } else
+            } else {
                 $(location).attr('href', response.message);
+            }
       }
     ).fail(function(jqXHR, textStatus, err) {
           alert('text status ' + textStatus + ', err ' + err)
@@ -60,57 +61,130 @@ function senPost(url, data, error) {
 $.ajaxSetup({
     beforeSend: function(xhr, settings) {
         if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
-            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+            xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
         }
     }
 });
 
+function vote(elem, value) {
+
+    var obj = elem.id.split('_'),
+        obj_name = obj[0],
+        obj_id = obj[1];
+
+    var obj_rate = $('#' + elem.id + '_rate');
+
+    $.post(
+        '/vote/',
+        { 'obj_name': obj_name, 'obj_id': obj_id, 'value': value },
+        function(response) {
+            if (!response.status) {
+                alert(response.message.value);
+            } else {
+                var rate = +obj_rate.text();
+                obj_rate.text(rate+value);
+            }
+      }
+    ).fail(function(jqXHR, textStatus, err) {
+          alert('text status ' + textStatus + ', err ' + err)
+    });
+}
+
+function setTrue(elem) {
+    var state = $(elem).is(':checked'),
+          id_answer = elem.id.split('_')[1],
+          href = window.location.href.split('/'),
+          checked = elem;
+
+      var currentQuestion = href[3] + '/' + href[4];
+      var checkboxes = $('.custom-checkbox');
+
+      $.post(
+          '/' + currentQuestion + '/answer/' + id_answer,
+          { 'is_true': state },
+          function(response) {
+              if (!response.status) {
+                  alert(response.message.value);
+              } else {
+                  if (state) {
+                        for (var i=0; i < checkboxes.length; i++) {
+                            if (checkboxes[i].id !== checked.id + '_') {
+                                checkboxes[i].innerHTML = "";
+                            }
+                        }
+                  } else {
+                      for (var i=0; i < checkboxes.length; i++) {
+                          if (checkboxes[i].id !== checked.id + '_') {
+                              var id = checkboxes[i].id.slice(0, checkboxes[i].id.length - 1);
+
+                              var checkbox = document.createElement("input");
+                              checkbox.type = "checkbox";
+                              checkbox.setAttribute('onclick', 'setTrue(this);');
+                              checkbox.className = "custom-control-input";
+                              checkbox.id = id;
+
+                              var label = document.createElement("label");
+                              label.htmlFor = id;
+                              label.innerText = "Is true";
+                              label.className = "custom-control-label";
+
+                              checkboxes[i].append(checkbox);
+                              checkboxes[i].append(label);
+                          }
+                      }
+                  }
+              }
+          }
+      ).fail(function(jqXHR, textStatus, err) {
+          alert('text status ' + textStatus + ', err ' + err)
+      });
+}
+
 jQuery(document).ready(function() {
 
-  $("#logIn").on("submit", function (event) {
+  $('#logIn').on('submit', function (event) {
 
       event.preventDefault();
-      var email = $("#email").val(),
-          password = $("#password").val(),
-          next = $(this).find("input[name='next']").eq(0).val(),
+      var email = $('#email').val(),
+          password = $('#password').val(),
+          next = $(this).find('input[name=\'next\']').eq(0).val(),
           error = $('.errorLogin').eq(0);
 
       if (next === '') next = '/';
 
-      senPost("/login/" ,
-             { "email": email, "password": password, "next": next },
+      senPost('/login/' ,
+             { 'email': email, 'password': password, 'next': next },
                   error);
   });
 
-  $("#signUp").on("submit", function (event) {
+  $('#signUp').on('submit', function (event) {
 
       event.preventDefault();
-      var username = $("#login").val(),
-          email = $("#email2").val(),
-          password1 = $("#password1").val(),
-          password2 = $("#password2").val(),
+      var username = $('#login').val(),
+          email = $('#email2').val(),
+          password1 = $('#password1').val(),
+          password2 = $('#password2').val(),
           error = $('.errorSignup').eq(0);
 
       if (password1 !== password2) {
-          error.html("Passwords doesn't match");
+          error.html('Passwords doesn\'t match');
       } else {
-          senPost("/signup/" ,
-                 { "username": username, "email": email, "password1": password1, "password2": password2 },
+          senPost('/signup/' ,
+                 { 'username': username, 'email': email, 'password1': password1, 'password2': password2 },
                       error);
       }
   });
 
-  $("#askForm").on("submit", function (event) {
+  $('#askForm').on('submit', function (event) {
 
       event.preventDefault();
-      var title = $("#title").val(),
-          text = $("#tinymce").val(),
-          tags = $("#tags").val(),
+      var title = $('#title').val(),
+          text = $('#tinymce').val(),
+          tags = $('#tags').val(),
           error = $('.errorSignup').eq(0);
 
-      senPost("/ask/" ,
-             { "title": title, "text": text, "tags": tags },
+      senPost('/ask/' ,
+             { 'title': title, 'text': text, 'tags': tags },
                   error);
   });
-
 });

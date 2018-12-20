@@ -87,3 +87,47 @@ class AnswerForm(forms.ModelForm):
             obj.save()
 
         return obj
+
+
+class VoteForm(forms.ModelForm):
+    obj_name = forms.CharField(required=True, max_length=8)
+    obj_id = forms.IntegerField(required=True)
+    value = forms.IntegerField(required=True)
+
+    class Meta:
+        model = Vote
+        fields = ['value']
+
+    def __init__(self, author, *args, **kwargs):
+        self.user = author
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = self.cleaned_data
+        obj_name = cleaned_data.get('obj_name')
+        obj_id = cleaned_data.get('obj_id')
+        value = cleaned_data.get('value')
+
+        if obj_name != 'answer' and obj_name != 'question':
+            self.add_error('obj_name', 'Wrong parameters')
+
+        if value != 1 and value != -1:
+            self.add_error('value', 'Vote value can be only 1 or -1')
+
+        votes = Vote.objects.filter(user=self.user)\
+                            .filter(content_type__model__iexact=obj_name)
+        if votes:
+            _votes = votes.filter(object_id=obj_id)
+            _votes.exclude(value=value).delete()
+            if _votes:
+                self.add_error('value', 'Sorry but you have already voted!!!')
+
+    def save(self, *args, commit=True):
+        obj = super().save(commit=False)
+        obj.user = self.user
+        obj.content_object = args[0]
+        obj.content_object.rate += obj.value
+        obj.content_object.save(update_fields=['rate'])
+
+        if commit:
+            obj.save()

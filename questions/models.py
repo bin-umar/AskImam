@@ -8,6 +8,7 @@ from tinymce.models import HTMLField
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from .managers import *
+from django import template
 
 
 class Profile(models.Model):

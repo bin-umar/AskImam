@@ -33,7 +33,7 @@
         <div class="card">
           <div class="card-body">
               <div class="row">
-                  {% include 'inc/avatar_block.html' with rate=question.rate %}
+                  {% include 'inc/avatar_block.html' with obj=question %}
                   <div class="col">
                       <span class="question-created-time">
                           <i>{{ question.created_at }}</i>
