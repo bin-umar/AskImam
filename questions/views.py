@@ -125,6 +125,18 @@ def answer(request, question_id):
 
 @login_required(login_url='/login/')
 def profile(request):
+    profile = Profile.objects.get(user_id__exact=request.user.pk)
+    if request.POST:
+        form = ProfileForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            return render(request, 'profile.html', {'user': profile.user})
+        else:
+            print(form.errors)
+            return render(request, 'profile.html', {
+                        'user': profile.user,
+                        'errors': form.errors
+                        })
     return render(request, 'profile.html')
 
 
@@ -132,11 +144,15 @@ def question(request, pk):
     one_question = Question.objects.get(pk=pk)
     answers = Answer.objects.filter(question_id=pk)
     one_is_true = answers.filter(is_true=True).count() >= 1
-    print(one_is_true)
-    print(answers.filter(is_true=True).count())
+
+    user_id = 0
+    if request.user:
+        user_id = request.user.pk
+
     return render(request, 'question.html', {
         'question': one_question,
         'one_is_true': one_is_true,
+        'user_id': user_id,
         'answers': answers
     })
 
@@ -170,7 +186,7 @@ def vote(request):
 @login_required(login_url='/login/')
 def set_answer_true(request, q_id, a_id):
     try:
-        Question.objects.get(pk=q_id)
+        question = Question.objects.get(pk=q_id)
     except Question.DoesNotExist:
         return status_response(False, 'Couldn\'t find question by this id')
     else:
@@ -179,12 +195,15 @@ def set_answer_true(request, q_id, a_id):
         except Answer.DoesNotExist:
             return status_response(False, 'Couldn\'t find answer by this id')
         else:
-            is_true = request.POST.get('is_true', False)
-            if is_true == 'true':
-                is_true = True
-            elif is_true == 'false':
-                is_true = False
-            answer.is_true = is_true
-            answer.save()
+            if request.user.pk == question.author_id:
+                is_true = request.POST.get('is_true', False)
+                if is_true == 'true':
+                    is_true = True
+                elif is_true == 'false':
+                    is_true = False
+                answer.is_true = is_true
+                answer.save()
+            else:
+                return status_response(False, 'Sorry but its not your question!!')
 
     return status_response(True, 'Successfully')

@@ -1,0 +1,7 @@
+{% load static %}
+
+{% if avatar %}
+    {{ avatar.url }}
+{% else %}
+    {% static '/img/default-avatar.png' %}
+{% endif %}

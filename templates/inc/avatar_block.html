@@ -3,7 +3,7 @@
 
 <div class="question-icons-block">
       <div class="avatar-block text-center">
-          <img src="{% static '/img/default-avatar.png' %}" class="question-icon">
+          <img src="{% include 'inc/avatar_img.html' with avatar=user.profile.avatar %}" class="question-icon">
       </div>
       <div class="question-votes border-bottom">
           <div class="d-inline-block">

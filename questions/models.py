@@ -8,13 +8,12 @@ from tinymce.models import HTMLField
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from .managers import *
-from django import template
 
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     nickname = models.CharField(max_length=20)
-    avatar = models.ImageField()
+    avatar = models.ImageField(upload_to='avatars/%Y/%m/%d/', default='avatars/default-avatar.png')
 
 
 class Vote(models.Model):

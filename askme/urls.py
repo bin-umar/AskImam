@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from questions import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('',              views.list_questions, name="index"),
@@ -17,3 +19,6 @@ urlpatterns = [
     path('question/<int:q_id>/answer/<int:a_id>', views.set_answer_true,  name='set_answer_true'),
     path('tinymce/', include('tinymce.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

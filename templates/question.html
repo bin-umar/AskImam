@@ -37,13 +37,15 @@
                             <i>{{ answer.record_date }}</i>
                         </span>
 
-                        <div class="custom-control custom-checkbox" id="isTrue_{{ answer.pk }}_">
-                            {% if one_is_true and answer.is_true or not one_is_true and not answer.is_true %}
-                            <input type="checkbox" class="custom-control-input" onclick="setTrue(this);" id="isTrue_{{ answer.pk }}"
-                                {{ answer.is_true | yesno:'checked,none' }}>
-                            <label class="custom-control-label" for="isTrue_{{ answer.pk }}">Is true</label>
-                            {% endif %}
-                        </div>
+                        {% if user_id == question.author_id %}
+                            <div class="custom-control custom-checkbox" id="isTrue_{{ answer.pk }}_">
+                                {% if one_is_true and answer.is_true or not one_is_true and not answer.is_true %}
+                                <input type="checkbox" class="custom-control-input" onclick="setTrue(this);" id="isTrue_{{ answer.pk }}"
+                                    {{ answer.is_true | yesno:'checked,none' }}>
+                                <label class="custom-control-label" for="isTrue_{{ answer.pk }}">Is true</label>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

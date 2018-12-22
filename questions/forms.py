@@ -4,6 +4,16 @@ from django.contrib.auth.forms import UserCreationForm
 from tinymce.models import HTMLField
 
 
+class ProfileForm(forms.ModelForm):
+    nickname = forms.CharField(max_length=20)
+    avatar = forms.ImageField()
+    login = forms.CharField(max_length=20)
+
+    class Meta:
+        model = Profile
+        fields = ['nickname', 'avatar']
+
+
 class LoginForm(forms.Form):
     email = forms.EmailField(required=True)
     password = forms.CharField(required=True)
