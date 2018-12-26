@@ -70,8 +70,7 @@ class QuestionsForm(forms.ModelForm):
             except Tag.DoesNotExist:
                 _tag = Tag(text=tag)
                 _tag.save()
-                tags.append(_tag.pk)
-            else:
+            finally:
                 tags.append(_tag.pk)
 
         obj.tags.add(*tags)

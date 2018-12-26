@@ -3,9 +3,34 @@ from questions.models import *
 from django.core.paginator import Paginator
 from questions.forms import *
 from django.http import JsonResponse
+from django.template.loader import render_to_string
 from django.contrib.auth import authenticate, logout as d_logout, login as d_login
 from django.contrib.auth.decorators import login_required
 from urllib import parse
+from cent import Client, CentException
+from django.conf import settings
+import jwt
+
+cl = Client(settings.CENTRIFUGE_ADDRESS, api_key=settings.CENTRIFUGE_API_KEY, timeout=settings.CENTRIFUGE_TIMEOUT)
+
+
+def get_token(request):
+    token = jwt.encode({"sub": request.user.pk}, settings.CENTRIFUGE_SECRET).decode()
+    if token:
+        return status_response(True, token)
+    else:
+        return status_response(False, 'Can\'t get token from server centrifugo')
+    # cl.publish('news', {'message': 'question has been added'})
+
+
+def publish(request):
+    cl.publish('news', {'message': 'question has been added'})
+    try:
+        cl.publish('news', {'message': 'question has been added'})
+    except CentException:
+        raise
+    else:
+        return status_response(True, 'ok')
 
 
 def pager(request, iterable):
@@ -118,9 +143,25 @@ def answer(request, question_id):
                 return redirect(reverse('index'))
             else:
                 answer = form.save(question)
-            return redirect(reverse('question', kwargs={'pk': question.pk}) + '#answer_' + str(answer.pk))
+                answers = Answer.objects.filter(question_id=question_id)
+                one_is_true = answers.filter(is_true=True).count() >= 1
+
+                user_id = 0
+                if request.user:
+                    user_id = request.user.pk
+
+                answer_html = render_to_string('inc/answer.html', {
+                    'question': question,
+                    'one_is_true': one_is_true,
+                    'user_id': user_id,
+                    'answer': answer
+                })
+
+                cl.publish('question_' + str(question_id), {'answer': str(answer_html)})
+
+                return status_response(True, 'Answer has been added and published')
         else:
-            return redirect('/question/' + str(question_id)) #It should be replaced with error page
+            return status_response(False, form.errors)
 
 
 @login_required(login_url='/login/')
@@ -149,11 +190,14 @@ def question(request, pk):
     if request.user:
         user_id = request.user.pk
 
+    token = jwt.encode({"sub": str(user_id)}, settings.CENTRIFUGE_SECRET).decode()
+
     return render(request, 'question.html', {
         'question': one_question,
         'one_is_true': one_is_true,
         'user_id': user_id,
-        'answers': answers
+        'answers': answers,
+        'token': token
     })
 
 

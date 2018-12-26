@@ -77,6 +77,6 @@ def inc_question_answer_count(sender, instance, created, **kwargs):
 
 
 @receiver(post_delete, sender=Answer)
-def dec_question_answer_count(sender, instance, created, **kwargs):
+def dec_question_answer_count(sender, instance, **kwargs):
     instance.question.answer_count -= 1
     instance.question.save()

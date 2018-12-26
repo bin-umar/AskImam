@@ -2,18 +2,18 @@
 {% load class_name %}
 
 <div class="question-icons-block">
-      <div class="avatar-block text-center">
-          <img src="{% include 'inc/avatar_img.html' with avatar=user.profile.avatar %}" class="question-icon">
+  <div class="avatar-block text-center">
+      <img src="{% include 'inc/avatar_img.html' with avatar=obj.author.profile.avatar %}" class="question-icon">
+  </div>
+  <div class="question-votes border-bottom">
+      <div class="d-inline-block">
+        <i class="material-icons vote" id="{{ obj | to_class_name }}" onclick="vote(this, 1);">thumb_up</i>
       </div>
-      <div class="question-votes border-bottom">
-          <div class="d-inline-block">
-            <i class="material-icons vote" id="{{ obj | to_class_name }}" onclick="vote(this, 1);">thumb_up</i>
-          </div>
-          <div class="votes d-inline-block text-center" id="{{ obj | to_class_name }}_rate">
-              {{ obj.rate }}
-          </div>
-          <div class="d-inline-block vote" id="{{ obj | to_class_name }}" onclick="vote(this, -1);">
-              <i class="material-icons">thumb_down</i>
-          </div>
+      <div class="votes d-inline-block text-center" id="{{ obj | to_class_name }}_rate">
+          {{ obj.rate }}
+      </div>
+      <div class="d-inline-block vote" id="{{ obj | to_class_name }}" onclick="vote(this, -1);">
+          <i class="material-icons">thumb_down</i>
       </div>
   </div>
+</div>

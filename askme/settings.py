@@ -25,7 +25,7 @@ SECRET_KEY = 'zsoe0fjis4b$3@3@i2ch$z%y&gm!5j1(4414na5a@ore=(da3u'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['askimam.tj', '127.0.0.1']
 
 
 # Application definition
@@ -121,10 +121,23 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/'
+# STATIC_ROOT = os.path.join(BASE_DIR, '/')
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'public')
+    os.path.join(BASE_DIR, '/')
 ]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+    }
+}
+
+CENTRIFUGE_ADDRESS = 'http://askimam.tj:8001'
+CENTRIFUGE_SECRET = '45b11449-14d5-4f50-810d-0cc0864df986'
+CENTRIFUGE_API_KEY = 'jakha_secret'
+CENTRIFUGE_TIMEOUT = 10

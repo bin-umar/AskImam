@@ -140,6 +140,17 @@ function setTrue(elem) {
       });
 }
 
+function addAnswer(answer) {
+    var answers = $('#answers'),
+        answer_count = $('#answer_count');
+
+    var a_count = +answer_count.text();
+    answer_count.text(++a_count);
+
+    answers.append(answer);
+    tinymce.activeEditor.setContent('');
+}
+
 jQuery(document).ready(function() {
 
   $('#logIn').on('submit', function (event) {
@@ -187,4 +198,45 @@ jQuery(document).ready(function() {
              { 'title': title, 'text': text, 'tags': tags },
                   error);
   });
+
+  $('#addAnswer').on('submit', function (event) {
+
+      event.preventDefault();
+      var text = $('#tinymce'),
+          action = $(this).attr("action"),
+          error = $('.errorSignup').eq(0);
+
+      $.post(
+          action,
+          {'text': text.val()},
+          function(response) {
+              if (!response.status) {
+                  var data = response.message;
+                  Object.keys(data).forEach(function (key) {
+                        error.html(key + ': ' + data[key].toString());
+                  });
+              }
+          }
+      ).fail(function(jqXHR, textStatus, err) {
+          alert('text status ' + textStatus + ', err ' + err)
+      });
+  });
+
+
+  // $.post(
+  //     '/publish/',
+  //     function(response) {
+  //         if (response.status) {
+  //             console.log(response.message);
+  //             var cent = new Centrifuge('ws://askimam.tj:8001/connection/websocket');
+  //                 cent.setToken(response.message);
+  //                 cent.subscribe('news', function(msg) { console.log(msg) });
+  //                 cent.connect();
+  //         } else {
+  //             console.log(response.message);
+  //         }
+  //     }
+  // ).fail(function(jqXHR, textStatus, err) {
+  //     console.log('text status ' + textStatus + ', err ' + err)
+  // });
 });

@@ -1,10 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+<div class="row margin-top-10" id="answer_{{ answer.pk }}">
+<div class="padding-top-20">
+    {% include 'inc/avatar_block.html' with obj=answer %}
+</div>
+<div class="col">
+    <div class="card-body">
+        <p class="card-text text-justify question-text">
+            {{ answer.text | safe | escape }}
+        </p>
+        <span class="answer-created-time">
+            <i>{{ answer.record_date }}</i>
+        </span>
 
-</body>
-</html>
+        {% if user_id == question.author_id %}
+            <div class="custom-control custom-checkbox" id="isTrue_{{ answer.pk }}_">
+                {% if one_is_true and answer.is_true or not one_is_true and not answer.is_true %}
+                <input type="checkbox" class="custom-control-input" onclick="setTrue(this);" id="isTrue_{{ answer.pk }}"
+                    {{ answer.is_true | yesno:'checked,none' }}>
+                <label class="custom-control-label" for="isTrue_{{ answer.pk }}">Is true</label>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+<div class="border-bottom"></div>
